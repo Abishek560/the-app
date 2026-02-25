@@ -25,11 +25,23 @@
       return sym + num.toLocaleString();
     }
     if (field.type === "select") {
-      var str = String(value);
       var hasValueLabelOptions = field.options && field.options.length > 0 && field.options[0] && typeof field.options[0] === "object" && "label" in field.options[0];
+      var ids = Array.isArray(value) ? value : (typeof value === "string" && value.indexOf(",") !== -1 ? value.split(",").map(function (s) { return s.trim(); }).filter(Boolean) : [value]);
+      if (field.multi === true && ids.length > 0 && (hasValueLabelOptions || (field.moduleId && field.options && field.options.length > 0))) {
+        var chips = ids.map(function (id) {
+          var opt = field.options.filter(function (o) { return o && (String(o.value) === String(id)); })[0];
+          var str = opt ? opt.label : String(id);
+          var chipClass = "chip-default";
+          if (opt && opt.chipClass != null && String(opt.chipClass).trim() !== "") chipClass = String(opt.chipClass).trim().replace(/\s+/g, "-");
+          else if (field.chipByValue === true) chipClass = str.toLowerCase().replace(/\s+/g, "-");
+          return "<span class=\"chip " + chipClass + "\">" + str.replace(/</g, "&lt;") + "</span>";
+        });
+        return chips.join(" ");
+      }
+      var str = String(ids[0]);
       var opt = null;
       if (hasValueLabelOptions || (field.moduleId && field.options && field.options.length > 0)) {
-        opt = field.options.filter(function (o) { return o && (String(o.value) === String(value)); })[0];
+        opt = field.options.filter(function (o) { return o && (String(o.value) === String(ids[0])); })[0];
         str = opt ? opt.label : str;
       }
       var chipClass = "chip-default";
