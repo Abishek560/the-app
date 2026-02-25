@@ -37,6 +37,15 @@
     var type = (field && field.type) || "text";
     if (type === "module" && field.moduleId && builtLists && builtLists[field.moduleId]) {
       var refList = builtLists[field.moduleId];
+      if (field.multi === true && refList.length > 0) {
+        var n = 1 + (rowIndex % Math.min(3, refList.length));
+        var ids = [];
+        for (var i = 0; i < n; i++) {
+          var r = refList[(rowIndex + i) % refList.length];
+          if (r && r.id != null && ids.indexOf(r.id) === -1) ids.push(r.id);
+        }
+        return ids.length > 0 ? ids : [refList[0].id];
+      }
       var refRow = refList[rowIndex % refList.length];
       return refRow && refRow.id != null ? refRow.id : null;
     }
@@ -109,52 +118,74 @@
       id: "enquiries",
       label: "Leads",
       fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", sortable: true },
+        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
         name: { id: "name", name: "Customer name", type: "text", placeholder: "Filter by name", width: "20%", sortable: true },
-        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "18%", sortable: true },
-        service_type: { id: "service_type", name: "Service", type: "module", moduleId: "services", width: "18%" },
-        status: { id: "status", name: "Status", type: "select", options: ["all", "New", "Booked", "In progress", "Done", "Cancelled"], width: "14%", sortable: true, chipByValue: true },
-        assigned_to: { id: "assigned_to", name: "Mechanic", type: "text", placeholder: "Filter by mechanic", width: "18%", sortable: true }
+        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "18%" },
+        service_type: { id: "service_type", name: "Services", type: "module", moduleId: "services", width: "18%", multi: true },
+        status: { id: "status", name: "Status", type: "select", options: ["all", "New", "Booked", "In progress", "Done", "Cancelled"], width: "14%", chipByValue: true, chipPalette: { "New": "new", "Booked": "booked", "In progress": "in-progress", "Done": "done", "Cancelled": "cancelled" } }
       }
     },
     contacts: {
       id: "contacts",
       label: "Customers",
       fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", sortable: true },
+        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
         name: { id: "name", name: "Name", type: "text", placeholder: "Filter by name", width: "20%", sortable: true },
-        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "18%", sortable: true },
-        email: { id: "email", name: "Email", type: "text", format: "email", placeholder: "Filter by email", width: "28%", sortable: true },
-        preferred_services: { id: "preferred_services", name: "Preferred services", type: "module", moduleId: "services", width: "32%" }
+        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "18%" },
+        email: { id: "email", name: "Email", type: "text", format: "email", placeholder: "Filter by email", width: "28%" }
       }
     },
     services: {
       id: "services",
       label: "Services",
       fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", sortable: true },
-        name: {
-          id: "name",
-          name: "Service name",
-          type: "text",
-          placeholder: "Filter by name",
-          width: "28%",
-          options: ["Oil Change", "Full Service", "Brake Pad Replacement", "Brake Discs", "Tyre Change", "Wheel Alignment", "AC Repair", "Battery Check", "Engine Diagnostic", "Coolant Flush", "Spark Plugs", "Air Filter", "Windscreen Repair", "Suspension Check", "Exhaust Repair"],
-          sortable: true
-        },
-        type: { id: "type", name: "Type", type: "select", options: ["all", "Mechanical", "Electrical", "Body Work", "Tyres", "AC", "General Service"], width: "18%", sortable: true },
-        price: { id: "price", name: "Price (₹)", type: "number", placeholder: "e.g. 500", width: "14%", sortable: true },
-        duration_mins: { id: "duration_mins", name: "Duration (mins)", type: "number", placeholder: "e.g. 60", width: "14%", sortable: true }
+        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
+        name: { id: "name", name: "Service name", type: "text", placeholder: "Filter by name", width: "38%", sortable: true },
+        price: { id: "price", name: "Price (₹)", type: "number", format: "currency", currencyCode: "₹", placeholder: "e.g. 500", width: "27%" },
+        duration_mins: { id: "duration_mins", name: "Duration (mins)", type: "number", format: "number", placeholder: "e.g. 60", width: "27%" }
+      }
+    },
+    staffs: {
+      id: "staffs",
+      label: "Staffs",
+      fields: {
+        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
+        name: { id: "name", name: "Name", type: "text", placeholder: "Filter by name", width: "22%", sortable: true },
+        role: { id: "role", name: "Role", type: "text", placeholder: "Filter by role", width: "22%" },
+        email: { id: "email", name: "Email", type: "text", format: "email", placeholder: "Filter by email", width: "24%" },
+        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "24%" }
+      }
+    },
+    work_orders: {
+      id: "work_orders",
+      label: "Work orders",
+      fields: {
+        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
+        customer: { id: "customer", name: "Customer", type: "module", moduleId: "contacts", width: "18%", sortable: true },
+        vehicle: { id: "vehicle", name: "Vehicle", type: "module", moduleId: "vehicles", width: "18%" },
+        service: { id: "service", name: "Services", type: "module", moduleId: "services", width: "18%", multi: true },
+        status: { id: "status", name: "Status", type: "select", options: ["all", "Scheduled", "In progress", "Done", "Cancelled"], width: "14%", chipByValue: true, chipPalette: { "Scheduled": "booked", "In progress": "in-progress", "Done": "done", "Cancelled": "cancelled" } },
+        amount: { id: "amount", name: "Amount (₹)", type: "number", format: "currency", currencyCode: "₹", placeholder: "Filter by amount", width: "14%" }
+      }
+    },
+    vehicles: {
+      id: "vehicles",
+      label: "Vehicles",
+      fields: {
+        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
+        registration: { id: "registration", name: "Vehicle number", type: "text", placeholder: "Filter by vehicle number", width: "46%", sortable: true },
+        owner: { id: "owner", name: "Owner", type: "module", moduleId: "contacts", width: "46%" }
       }
     }
   };
 
-  /** Options for a type "module" field: { value: entity id, label: display } from linked module list. Uses "name" for label when present, else first field. */
+  /** Options for a type "module" field: { value: entity id, label: display } from linked module list. Uses "name" for label when present, else "registration" (e.g. vehicles), else first field. */
   function getModuleFieldOptions(refModuleId) {
     var list = mockDataObj[refModuleId];
     if (!Array.isArray(list) || list.length === 0) return [];
     var refModule = modulesObj[refModuleId];
-    var labelKey = (refModule && refModule.fields && refModule.fields.name) ? "name" : (refModule && refModule.fields ? Object.keys(refModule.fields)[0] : "name");
+    var fields = refModule && refModule.fields;
+    var labelKey = (fields && fields.name) ? "name" : (fields && fields.registration) ? "registration" : (fields ? Object.keys(fields)[0] : "name");
     var opts = list.map(function (row) {
       var label = row[labelKey] != null ? String(row[labelKey]) : "Item " + row.id;
       return { value: row.id, label: label };
@@ -188,6 +219,7 @@
         if (f.searchable != null) out.searchable = f.searchable;
         if (f.hideInList != null) out.hideInList = f.hideInList;
         if (f.hideInFilter != null) out.hideInFilter = f.hideInFilter;
+        if (f.multi != null) out.multi = f.multi;
         if (f.chipPalette && f.options && Array.isArray(f.options)) {
           out.options = f.options.map(function (o) {
             var val = (o && typeof o === "object" && o.value != null) ? o.value : o;
@@ -229,6 +261,7 @@
       if (f.searchable != null) out.searchable = f.searchable;
       if (f.hideInList != null) out.hideInList = f.hideInList;
       if (f.hideInFilter != null) out.hideInFilter = f.hideInFilter;
+      if (f.multi != null) out.multi = f.multi;
       if (f.chipPalette && f.options && Array.isArray(f.options)) {
         out.options = f.options.map(function (o) {
           var val = (o && typeof o === "object" && o.value != null) ? o.value : o;
@@ -242,10 +275,29 @@
     });
   }
 
+  /** One entity per service (single service per row). */
+  var servicesList = [
+    { id: 1, name: "Oil Change", price: 1500, duration_mins: 30 },
+    { id: 2, name: "Brake Pad Replacement", price: 3500, duration_mins: 60 },
+    { id: 3, name: "Full Service", price: 5000, duration_mins: 120 },
+    { id: 4, name: "Brake Discs", price: 4500, duration_mins: 90 },
+    { id: 5, name: "Tyre Change", price: 2000, duration_mins: 45 },
+    { id: 6, name: "Wheel Alignment", price: 1200, duration_mins: 30 },
+    { id: 7, name: "AC Repair", price: 2500, duration_mins: 60 },
+    { id: 8, name: "Battery Check", price: 500, duration_mins: 15 },
+    { id: 9, name: "Engine Diagnostic", price: 800, duration_mins: 30 },
+    { id: 10, name: "Coolant Flush", price: 1800, duration_mins: 45 }
+  ];
+
   var mockDataObj = { currentUser: { id: 1, name: "Priya", role: "Garage Manager", email: "priya@garage.example.com", initials: "P" } };
   var buildOrder = getModuleBuildOrder();
   buildOrder.forEach(function (moduleId) {
-    mockDataObj[moduleId] = generateMockList(moduleId, defaultListSize, mockDataObj);
+    if (moduleId === "services") {
+      mockDataObj.services = servicesList;
+      return;
+    }
+    var count = (moduleId === "staffs") ? 3 : defaultListSize;
+    mockDataObj[moduleId] = generateMockList(moduleId, count, mockDataObj);
   });
 
   function toPaginated(pageData, totalCount, pageNumber, pageLimit) {
@@ -269,7 +321,10 @@
         var recordVal = field ? row[field.id] : row[key];
         if (field && field.type === "select") {
           if (filterVal === "all") continue;
-          if (String(recordVal) !== String(filterVal)) return false;
+          if (Array.isArray(recordVal)) {
+            var hasMatch = recordVal.some(function (id) { return String(id) === String(filterVal); });
+            if (!hasMatch) return false;
+          } else if (String(recordVal) !== String(filterVal)) return false;
         } else if (field && field.type === "number") {
           var num = parseFloat(String(filterVal).trim(), 10);
           if (!isNaN(num) && (recordVal == null || Number(recordVal) < num)) return false;
