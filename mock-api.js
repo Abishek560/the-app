@@ -114,6 +114,11 @@
   /** modules = { moduleId: { id, label, fields: { fieldId: { id, name, type, placeholder?, options?, width?, moduleId? } } } }.
    *  type "module" + moduleId connects to another module: values and UI options come from that module's list. */
   var modulesObj = {
+    dashboard: {
+      id: "dashboard",
+      label: "Dashboard",
+      fields: {}
+    },
     enquiries: {
       id: "enquiries",
       label: "Leads",
@@ -292,6 +297,7 @@
   var mockDataObj = { currentUser: { id: 1, name: "Priya", role: "Garage Manager", email: "priya@garage.example.com", initials: "P" } };
   var buildOrder = getModuleBuildOrder();
   buildOrder.forEach(function (moduleId) {
+    if (moduleId === "dashboard") return;
     if (moduleId === "services") {
       mockDataObj.services = servicesList;
       return;

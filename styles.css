@@ -790,6 +790,94 @@ body {
   min-height: 0;
 }
 
+/* Dashboard: four sections on a single screen, same list UI as module tabs */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dashboard-header {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: 1fr 1fr;
+  gap: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, 1fr);
+  }
+}
+
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  box-shadow: 0 1px 3px var(--card-shadow);
+}
+
+.dashboard-section-title {
+  margin: 0;
+  padding: 10px 14px 14px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--card-bg);
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}
+
+/* Section content wraps the same scroll/table structure as .module-list */
+.dashboard-section-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-section-content .module-list-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+@supports (scrollbar-gutter: stable) {
+  .dashboard-section-content .module-list-scroll {
+    scrollbar-gutter: stable;
+  }
+}
+
+.dashboard-loading {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
 /* Module card: header on top (full width), then filter + list layout */
 .card:has(.module-layout) {
   display: flex;

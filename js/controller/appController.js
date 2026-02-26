@@ -13,6 +13,8 @@
   var contentView = theApp.view.content;
   var entityView = theApp.view.entityModule;
   var entityController = theApp.controller.entity;
+  var dashboardView = theApp.view.dashboard;
+  var dashboardController = theApp.controller.dashboard;
   var topbarView = theApp.view.topbar;
   var navController = theApp.controller.nav;
   var getModuleFields = theApp.getModuleFields || function () { return []; };
@@ -32,6 +34,11 @@
   function renderContent() {
     if (!contentEl) return;
     var moduleId = state.activeModule;
+    if (moduleId === "dashboard") {
+      contentEl.innerHTML = dashboardView.render();
+      if (dashboardController && dashboardController.bind) dashboardController.bind(contentEl);
+      return;
+    }
     var fields = getModuleFields(moduleId);
     if (fields.length > 0) {
       var data = getEntityData(moduleId);
