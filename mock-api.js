@@ -1,188 +1,46 @@
 /**
- * Mock API – SINGLE SOURCE OF TRUTH for modules and data. Fully dynamic.
- * - modulesObj = { moduleId: { id, label, fields: { fieldId: { id, name, type, options?, ... } } } }
- * - List data is generated from each module's fields (generateMockList). No per-module generators.
- * To add/rename modules or fields: edit only modulesObj. Data is built automatically.
+ * Mock API – loads static data from mock-data.json, then exposes getModules, getModuleData, getEntity, etc.
  */
 (function () {
   "use strict";
 
-  var MOCK_DELAY_MS = 1000;
+  var MOCK_DELAY_MS = 200;
+  var modulesObj;
+  var mockDataObj;
+  var MODULE_SETUP_TEMPLATES;
+
+  var APP_DATA_URL = "https://api.jsonbin.io/v3/b/69afd681ff3f7076473e1ed9";
+
+  /** Data loaded from JSONBin (or data/app-data.json fallback). Falls back to window globals if present. */
+  function applyData(mockData, populateData) {
+    MODULE_SETUP_TEMPLATES = (populateData && populateData.moduleSetupTemplates) || (typeof window !== "undefined" && window.__POPULATE_DATA__ && window.__POPULATE_DATA__.moduleSetupTemplates) || { groups: [] };
+    modulesObj = (mockData && mockData.modules && typeof mockData.modules === "object") ? mockData.modules : (modulesObj || {});
+    mockDataObj = (mockData && mockData.mockData && typeof mockData.mockData === "object") ? mockData.mockData : (mockDataObj || { currentUser: {} });
+    if (typeof window !== "undefined" && populateData) window.__POPULATE_DATA__ = populateData;
+    return { mockData: mockData, populateData: populateData };
+  }
+  function parseAppData(raw) {
+    var data = (raw && raw.record != null) ? raw.record : raw;
+    return applyData(data && data.mockData, data && data.populateData);
+  }
+  var dataPromise = (typeof fetch !== "undefined"
+    ? fetch(APP_DATA_URL).then(function (r) { if (!r.ok) throw new Error("Failed to load app data"); return r.json(); }).then(parseAppData).catch(function (err) {
+      return fetch("data/app-data.json").then(function (r) { if (!r.ok) throw new Error("Fallback failed"); return r.json(); }).then(parseAppData);
+    }).catch(function (err) { console.warn("App data load failed, using defaults:", err && err.message); applyData(null, null); return {}; })
+    : Promise.resolve(applyData(null, null)));
 
   function delay(ms, value) {
     return new Promise(function (resolve) { setTimeout(function () { resolve(value); }, ms); });
   }
 
-  var defaultListSize = 10;
-  /** Generic word pools for text generation. No field-id or business logic – change modules only. */
-  var textPoolA = ["Anita", "Kavya", "Divya", "Shruti", "Rekha", "Priya", "Anjali", "Kavitha", "Deepa", "Lakshmi", "Meera", "Sneha", "Riya", "Neha", "Pooja"];
-  var textPoolB = ["Sharma", "Reddy", "Nair", "Patel", "Kumar", "Iyer", "Pillai", "Menon", "Rao", "Singh", "Gupta", "Mehta", "Joshi", "Desai", "Narayan"];
-
-  function generatePhone(rowIndex) {
-    var n = 9000000000 + (rowIndex % 999999999);
-    return "+91 " + String(n).replace(/(\d{5})(\d{5})/, "$1 $2");
+  /** Resolve label/name: string → as-is; object { en, ta } → pick by locale. */
+  function resolveLabel(val, locale) {
+    if (val == null) return undefined;
+    if (typeof val === "string") return val;
+    if (typeof val === "object" && (val.en != null || val.ta != null))
+      return val[locale] || val.en || val.ta || "";
+    return undefined;
   }
-  function generateEmail(rowIndex) {
-    var a = textPoolA[rowIndex % textPoolA.length].toLowerCase();
-    var b = textPoolB[rowIndex % textPoolB.length].toLowerCase();
-    return a + "." + b + "@example.com";
-  }
-
-  /**
-   * Generates one cell value from field config and row index.
-   * Uses field.type and field.options; type "module" + field.moduleId uses the linked module's list.
-   */
-  function generateCellValue(field, rowIndex, builtLists) {
-    if (field && (field.type === "id" || field.id === "id")) return rowIndex + 1;
-    var type = (field && field.type) || "text";
-    if (type === "module" && field.moduleId && builtLists && builtLists[field.moduleId]) {
-      var refList = builtLists[field.moduleId];
-      if (field.multi === true && refList.length > 0) {
-        var n = 1 + (rowIndex % Math.min(3, refList.length));
-        var ids = [];
-        for (var i = 0; i < n; i++) {
-          var r = refList[(rowIndex + i) % refList.length];
-          if (r && r.id != null && ids.indexOf(r.id) === -1) ids.push(r.id);
-        }
-        return ids.length > 0 ? ids : [refList[0].id];
-      }
-      var refRow = refList[rowIndex % refList.length];
-      return refRow && refRow.id != null ? refRow.id : null;
-    }
-    if (type === "select" && field.options && field.options.length > 1) {
-      var opts = field.options.filter(function (o) { return String(o) !== "all"; });
-      return opts[rowIndex % opts.length];
-    }
-    if (type === "number") {
-      return 100 + (rowIndex % 4000);
-    }
-    if (type === "text" || !type) {
-      if (field.options && field.options.length > 1) {
-        var opts = field.options.filter(function (o) { return String(o) !== "all"; });
-        return opts[rowIndex % opts.length] + (opts.length > 1 ? ", " + opts[(rowIndex + 2) % opts.length] : "");
-      }
-      var fmt = (field && field.format) ? String(field.format).toLowerCase() : "";
-      if (fmt === "phone") return generatePhone(rowIndex);
-      if (fmt === "email") return generateEmail(rowIndex);
-      return textPoolA[rowIndex % textPoolA.length] + " " + textPoolB[rowIndex % textPoolB.length];
-    }
-    return "Value " + rowIndex;
-  }
-
-  /** Returns module ids in dependency order: referenced modules (e.g. services) before modules that reference them. */
-  function getModuleBuildOrder() {
-    var ids = Object.keys(modulesObj);
-    var order = [];
-    var added = {};
-    function depsSatisfied(moduleId) {
-      var m = modulesObj[moduleId];
-      if (!m || !m.fields) return true;
-      var k;
-      for (k in m.fields) {
-        if (m.fields[k].type === "module" && m.fields[k].moduleId && !added[m.fields[k].moduleId]) return false;
-      }
-      return true;
-    }
-    while (order.length < ids.length) {
-      var progress = false;
-      ids.forEach(function (id) {
-        if (!added[id] && depsSatisfied(id)) { order.push(id); added[id] = true; progress = true; }
-      });
-      if (!progress) break;
-    }
-    ids.forEach(function (id) { if (!added[id]) order.push(id); });
-    return order;
-  }
-
-  /** Generates mock list for any module from its fields. builtLists = { moduleId: list } for type "module" fields. */
-  function generateMockList(moduleId, count, builtLists) {
-    var m = modulesObj[moduleId];
-    if (!m || !m.fields) return [];
-    var fieldIds = Object.keys(m.fields);
-    var list = [];
-    for (var i = 0; i < count; i++) {
-      var row = { id: i + 1 };
-      for (var k = 0; k < fieldIds.length; k++) {
-        var fid = fieldIds[k];
-        row[fid] = generateCellValue(m.fields[fid], i, builtLists);
-      }
-      list.push(row);
-    }
-    return list;
-  }
-
-  /** modules = { moduleId: { id, label, fields: { fieldId: { id, name, type, placeholder?, options?, width?, moduleId? } } } }.
-   *  type "module" + moduleId connects to another module: values and UI options come from that module's list. */
-  var modulesObj = {
-    dashboard: {
-      id: "dashboard",
-      label: "Dashboard",
-      fields: {}
-    },
-    enquiries: {
-      id: "enquiries",
-      label: "Leads",
-      fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
-        name: { id: "name", name: "Customer name", type: "text", placeholder: "Filter by name", width: "20%", sortable: true },
-        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "18%" },
-        service_type: { id: "service_type", name: "Services", type: "module", moduleId: "services", width: "18%", multi: true },
-        status: { id: "status", name: "Status", type: "select", options: ["all", "New", "Booked", "In progress", "Done", "Cancelled"], width: "14%", chipByValue: true, chipPalette: { "New": "new", "Booked": "booked", "In progress": "in-progress", "Done": "done", "Cancelled": "cancelled" } }
-      }
-    },
-    contacts: {
-      id: "contacts",
-      label: "Customers",
-      fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
-        name: { id: "name", name: "Name", type: "text", placeholder: "Filter by name", width: "20%", sortable: true },
-        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "18%" },
-        email: { id: "email", name: "Email", type: "text", format: "email", placeholder: "Filter by email", width: "28%" }
-      }
-    },
-    services: {
-      id: "services",
-      label: "Services",
-      fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
-        name: { id: "name", name: "Service name", type: "text", placeholder: "Filter by name", width: "38%", sortable: true },
-        price: { id: "price", name: "Price (₹)", type: "number", format: "currency", currencyCode: "₹", placeholder: "e.g. 500", width: "27%" },
-        duration_mins: { id: "duration_mins", name: "Duration (mins)", type: "number", format: "number", placeholder: "e.g. 60", width: "27%" }
-      }
-    },
-    staffs: {
-      id: "staffs",
-      label: "Staffs",
-      fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
-        name: { id: "name", name: "Name", type: "text", placeholder: "Filter by name", width: "22%", sortable: true },
-        role: { id: "role", name: "Role", type: "text", placeholder: "Filter by role", width: "22%" },
-        email: { id: "email", name: "Email", type: "text", format: "email", placeholder: "Filter by email", width: "24%" },
-        phone: { id: "phone", name: "Phone", type: "text", format: "phone", placeholder: "Filter by phone", width: "24%" }
-      }
-    },
-    work_orders: {
-      id: "work_orders",
-      label: "Work orders",
-      fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
-        customer: { id: "customer", name: "Customer", type: "module", moduleId: "contacts", width: "18%", sortable: true },
-        vehicle: { id: "vehicle", name: "Vehicle", type: "module", moduleId: "vehicles", width: "18%" },
-        service: { id: "service", name: "Services", type: "module", moduleId: "services", width: "18%", multi: true },
-        status: { id: "status", name: "Status", type: "select", options: ["all", "Scheduled", "In progress", "Done", "Cancelled"], width: "14%", chipByValue: true, chipPalette: { "Scheduled": "booked", "In progress": "in-progress", "Done": "done", "Cancelled": "cancelled" } },
-        amount: { id: "amount", name: "Amount (₹)", type: "number", format: "currency", currencyCode: "₹", placeholder: "Filter by amount", width: "14%" }
-      }
-    },
-    vehicles: {
-      id: "vehicles",
-      label: "Vehicles",
-      fields: {
-        id: { id: "id", name: "ID", type: "id", width: "8%", searchable: false, hideInFilter: true },
-        registration: { id: "registration", name: "Vehicle number", type: "text", placeholder: "Filter by vehicle number", width: "46%", sortable: true },
-        owner: { id: "owner", name: "Owner", type: "module", moduleId: "contacts", width: "46%" }
-      }
-    }
-  };
 
   /** Options for a type "module" field: { value: entity id, label: display } from linked module list. Uses "name" for label when present, else "registration" (e.g. vehicles), else first field. */
   function getModuleFieldOptions(refModuleId) {
@@ -198,13 +56,16 @@
     return [{ value: "all", label: "All" }].concat(opts);
   }
 
-  /** Converts modules object to array; each field gets label from name. type "module" → "select" with options from linked module. */
-  function modulesToArray() {
+  /** Converts modules object to array; each field label from name/label (string or { en, ta }) via resolveLabel. type "module" → "select" with options from linked module. */
+  function modulesToArray(locale) {
+    var loc = (locale === "en" || locale === "ta") ? locale : "en";
     return Object.keys(modulesObj).map(function (moduleId) {
       var m = modulesObj[moduleId];
+      var label = resolveLabel(m.label, loc) || m.id || moduleId;
       var fieldsArr = Object.keys(m.fields || {}).map(function (fieldId) {
         var f = m.fields[fieldId];
-        var out = { id: f.id || fieldId, label: f.name != null ? f.name : f.label || fieldId };
+        var fieldLabel = resolveLabel(f.name, loc) || resolveLabel(f.label, loc) || fieldId;
+        var out = { id: f.id || fieldId, label: fieldLabel };
         if (f.type === "module" && f.moduleId) {
           out.type = "select";
           out.options = getModuleFieldOptions(f.moduleId);
@@ -213,7 +74,7 @@
           if (f.type != null) out.type = f.type;
           if (f.options != null) out.options = f.options;
         }
-        if (f.placeholder != null) out.placeholder = f.placeholder;
+        if (f.placeholder != null) out.placeholder = resolveLabel(f.placeholder, loc);
         if (f.width != null) out.width = f.width;
         if (f.value != null) out.value = f.value;
         if (f.sortable != null) out.sortable = f.sortable;
@@ -236,17 +97,19 @@
         }
         return out;
       });
-      return { id: m.id || moduleId, label: m.label, fields: fieldsArr };
+      return { id: m.id || moduleId, label: label, fields: fieldsArr };
     });
   }
 
-  /** Returns field config array for a module. type "module" → "select" with options from linked module. */
-  function getModuleFieldsArray(moduleId) {
+  /** Returns field config array for a module. type "module" → "select" with options from linked module. locale = optional for label resolution. */
+  function getModuleFieldsArray(moduleId, locale) {
     var m = modulesObj[moduleId];
     if (!m || !m.fields) return [];
+    var loc = (locale === "en" || locale === "ta") ? locale : "en";
     return Object.keys(m.fields).map(function (fieldId) {
       var f = m.fields[fieldId];
-      var out = { id: f.id || fieldId, label: f.name != null ? f.name : f.label || fieldId };
+      var fieldLabel = resolveLabel(f.name, loc) || resolveLabel(f.label, loc) || fieldId;
+      var out = { id: f.id || fieldId, label: fieldLabel };
       if (f.type === "module" && f.moduleId) {
         out.type = "select";
         out.options = getModuleFieldOptions(f.moduleId);
@@ -255,7 +118,7 @@
         if (f.type != null) out.type = f.type;
         if (f.options != null) out.options = f.options;
       }
-      if (f.placeholder != null) out.placeholder = f.placeholder;
+      if (f.placeholder != null) out.placeholder = resolveLabel(f.placeholder, loc);
       if (f.width != null) out.width = f.width;
       if (f.value != null) out.value = f.value;
       if (f.sortable != null) out.sortable = f.sortable;
@@ -279,32 +142,6 @@
       return out;
     });
   }
-
-  /** One entity per service (single service per row). */
-  var servicesList = [
-    { id: 1, name: "Oil Change", price: 1500, duration_mins: 30 },
-    { id: 2, name: "Brake Pad Replacement", price: 3500, duration_mins: 60 },
-    { id: 3, name: "Full Service", price: 5000, duration_mins: 120 },
-    { id: 4, name: "Brake Discs", price: 4500, duration_mins: 90 },
-    { id: 5, name: "Tyre Change", price: 2000, duration_mins: 45 },
-    { id: 6, name: "Wheel Alignment", price: 1200, duration_mins: 30 },
-    { id: 7, name: "AC Repair", price: 2500, duration_mins: 60 },
-    { id: 8, name: "Battery Check", price: 500, duration_mins: 15 },
-    { id: 9, name: "Engine Diagnostic", price: 800, duration_mins: 30 },
-    { id: 10, name: "Coolant Flush", price: 1800, duration_mins: 45 }
-  ];
-
-  var mockDataObj = { currentUser: { id: 1, name: "Priya", role: "Garage Manager", email: "priya@garage.example.com", initials: "P" } };
-  var buildOrder = getModuleBuildOrder();
-  buildOrder.forEach(function (moduleId) {
-    if (moduleId === "dashboard") return;
-    if (moduleId === "services") {
-      mockDataObj.services = servicesList;
-      return;
-    }
-    var count = (moduleId === "staffs") ? 3 : defaultListSize;
-    mockDataObj[moduleId] = generateMockList(moduleId, count, mockDataObj);
-  });
 
   function toPaginated(pageData, totalCount, pageNumber, pageLimit) {
     return { data: pageData, meta: { total: totalCount, page: pageNumber, limit: pageLimit } };
@@ -351,7 +188,7 @@
     var filters = (options && options.filters) || {};
     var sortBy = (options && options.sortBy && String(options.sortBy).trim()) || null;
     var sortOrder = (options && options.sortOrder === "desc") ? "desc" : "asc";
-    var fieldConfig = getModuleFieldsArray(moduleId);
+    var fieldConfig = getModuleFieldsArray(moduleId, options && options.locale);
     var list = mockDataObj.hasOwnProperty(moduleId) && Array.isArray(mockDataObj[moduleId]) ? mockDataObj[moduleId] : [];
     var filtered = filterBySearchAndFilters(list, fieldConfig, searchTerm, filters);
     var sortField = sortBy ? fieldConfig.filter(function (f) { return f.id === sortBy; })[0] : null;
@@ -379,13 +216,203 @@
     return delay(MOCK_DELAY_MS, toPaginated(filtered.slice(start, start + pageLimit), total, pageNumber, pageLimit));
   }
 
+  function getEntity(moduleId, entityId) {
+    var list = mockDataObj.hasOwnProperty(moduleId) && Array.isArray(mockDataObj[moduleId]) ? mockDataObj[moduleId] : [];
+    var id = entityId != null ? Number(entityId) : NaN;
+    if (isNaN(id)) {
+      var row = list.filter(function (r) { return String(r.id) === String(entityId); })[0];
+      return row || null;
+    }
+    var found = list.filter(function (r) { return r.id === id; })[0];
+    return found || null;
+  }
+
+  function updateEntity(moduleId, entityId, data) {
+    var list = mockDataObj.hasOwnProperty(moduleId) && Array.isArray(mockDataObj[moduleId]) ? mockDataObj[moduleId] : [];
+    var entity = getEntity(moduleId, entityId);
+    if (!entity || !list.length) return null;
+    Object.keys(data).forEach(function (key) {
+      if (key !== "id") entity[key] = data[key];
+    });
+    return entity;
+  }
+
+  function createEntity(moduleId, data) {
+    if (!mockDataObj.hasOwnProperty(moduleId) || !Array.isArray(mockDataObj[moduleId])) mockDataObj[moduleId] = [];
+    var list = mockDataObj[moduleId];
+    var maxId = list.length ? Math.max.apply(null, list.map(function (r) { return Number(r.id) || 0; })) : 0;
+    var newId = maxId + 1;
+    var entity = Object.assign({ id: newId }, data);
+    list.push(entity);
+    return entity;
+  }
+
+  var portalDetailsStore = null;
+
+  function getPortalDetails() {
+    if (portalDetailsStore) return portalDetailsStore;
+    var c = typeof window !== "undefined" && window.theApp && window.theApp.config;
+    return {
+      name: (c && c.appName) ? String(c.appName) : "The App",
+      portalName: (c && c.api && c.api.portalName) ? String(c.api.portalName) : "",
+      version: (c && c.api && c.api.version) ? String(c.api.version) : "v1",
+      baseURL: (c && c.api && c.api.baseURL) ? String(c.api.baseURL) : ""
+    };
+  }
+
+  function updatePortalDetails(data) {
+    portalDetailsStore = portalDetailsStore || getPortalDetails();
+    if (data && typeof data === "object") {
+      if (data.name != null) portalDetailsStore.name = String(data.name);
+      if (data.portalName != null) portalDetailsStore.portalName = String(data.portalName);
+      if (data.version != null) portalDetailsStore.version = String(data.version);
+      if (data.baseURL != null) portalDetailsStore.baseURL = String(data.baseURL);
+    }
+    return portalDetailsStore;
+  }
+
+  function updateModule(moduleId, data) {
+    var m = modulesObj[moduleId];
+    if (!m || !data || typeof data !== "object") return null;
+    if (data.label != null) m.label = data.label;
+    return m;
+  }
+
+  /** Minimal field set for a newly created module (id + name). */
+  var defaultNewModuleFields = {
+    id: { id: "id", name: { en: "ID", ta: "ஐடி" }, type: "id", width: "8%", searchable: false, hideInFilter: true },
+    name: { id: "name", name: { en: "Name", ta: "பெயர்" }, type: "text", placeholder: { en: "Filter by name", ta: "பெயரால் வடிகட்டு" }, width: "20%", sortable: true }
+  };
+
+  function createModule(moduleId, data) {
+    var id = (moduleId && String(moduleId).trim()) || (data && data.id && String(data.id).trim());
+    if (!id || modulesObj.hasOwnProperty(id)) return null;
+    var label = (data && data.label != null) ? data.label : id;
+    var labelObj = typeof label === "string" ? { en: label, ta: label } : label;
+    modulesObj[id] = {
+      id: id,
+      label: labelObj,
+      fields: JSON.parse(JSON.stringify(defaultNewModuleFields))
+    };
+    if (typeof mockDataObj !== "undefined") mockDataObj[id] = [];
+    return modulesObj[id];
+  }
+
+  /** Server assigns IDs. Accepts [{ label, fields }] (no id). Returns [{ id, label, fields }] with server-assigned ids. refModuleIndex on a field → moduleId pointing to that module in the same batch. */
+  function createModules(modulesInput) {
+    var list = Array.isArray(modulesInput) ? modulesInput : [];
+    var existing = Object.keys(modulesObj).filter(function (k) { return /^module\d+$/.test(k); });
+    var maxN = existing.reduce(function (m, k) {
+      var n = parseInt(k.replace(/^module/, ""), 10);
+      return isNaN(n) ? m : Math.max(m, n);
+    }, 0);
+    var result = [];
+    list.forEach(function (item, i) {
+      var id = "module" + (maxN + i + 1);
+      var label = (item && item.label != null) ? String(item.label).trim() : ("Module " + (i + 1));
+      var labelObj = { en: label, ta: label };
+      var fieldsArr = (item && Array.isArray(item.fields)) ? item.fields : [];
+      var fieldsObj = {};
+      fieldsArr.forEach(function (f) {
+        var fid = (f && (f.id || "").trim()) || ("field_" + Object.keys(fieldsObj).length);
+        if (!fid) return;
+        var flabel = (f && (f.label || f.id || "").trim()) || fid;
+        var ftype = (f && f.type) || "text";
+        var fieldDef = {
+          id: fid,
+          name: { en: flabel, ta: flabel },
+          type: ftype
+        };
+        if (ftype === "module" && f.refModuleIndex != null) {
+          fieldDef.moduleId = "module" + (maxN + f.refModuleIndex + 1);
+        }
+        fieldsObj[fid] = fieldDef;
+      });
+      modulesObj[id] = { id: id, label: labelObj, fields: fieldsObj };
+      if (typeof mockDataObj !== "undefined") mockDataObj[id] = [];
+      var resultFields = fieldsArr.map(function (f) {
+        var out = { id: (f && f.id || "").trim(), label: (f && (f.label || f.id || "").trim()) || "", type: (f && f.type) || "text" };
+        if (f && f.type === "module" && f.refModuleIndex != null) out.moduleId = "module" + (maxN + f.refModuleIndex + 1);
+        return out;
+      });
+      result.push({
+        id: id,
+        label: label,
+        fields: resultFields
+      });
+    });
+    return result;
+  }
+
+  function runBootstrap(options) {
+    var locale = (options && options.locale) || "en";
+    return Promise.all([
+      delay(MOCK_DELAY_MS, mockDataObj.currentUser),
+      delay(MOCK_DELAY_MS, getPortalDetails()),
+      delay(MOCK_DELAY_MS, modulesToArray(locale))
+    ]).then(function (results) {
+      return { user: results[0], portal: results[1], modules: results[2] };
+    });
+  }
+
   window.MockApi = {
-    getModules: function () {
-      return delay(MOCK_DELAY_MS, modulesToArray());
+    getModuleSetupTemplates: function () {
+      return dataPromise.then(function () { return MODULE_SETUP_TEMPLATES; });
     },
-    getModuleData: getModuleData,
+    getBootstrap: function (options) {
+      return dataPromise.then(function () { return runBootstrap(options); });
+    },
+    getModules: function (options) {
+      return dataPromise.then(function () {
+        var locale = (options && options.locale) || "en";
+        return delay(MOCK_DELAY_MS, modulesToArray(locale));
+      });
+    },
+    getModuleData: function (moduleId, options) {
+      return dataPromise.then(function () { return getModuleData(moduleId, options); });
+    },
+    getEntity: function (moduleId, entityId) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, getEntity(moduleId, entityId)); });
+    },
+    updateEntity: function (moduleId, entityId, data) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, updateEntity(moduleId, entityId, data)); });
+    },
+    createEntity: function (moduleId, data) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, createEntity(moduleId, data)); });
+    },
     getCurrentUser: function () {
-      return delay(MOCK_DELAY_MS, mockDataObj.currentUser);
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, mockDataObj.currentUser); });
+    },
+    setCurrentUser: function (data) {
+      return dataPromise.then(function () {
+        if (data && typeof data === "object") {
+          mockDataObj.currentUser = {
+            id: mockDataObj.currentUser && mockDataObj.currentUser.id != null ? mockDataObj.currentUser.id : 1,
+            name: data.name != null ? String(data.name) : (mockDataObj.currentUser && mockDataObj.currentUser.name) || "",
+            email: data.email != null ? String(data.email) : (mockDataObj.currentUser && mockDataObj.currentUser.email) || "",
+            initials: data.initials != null ? String(data.initials) : (mockDataObj.currentUser && mockDataObj.currentUser.initials) || "?"
+          };
+        }
+        return delay(MOCK_DELAY_MS, mockDataObj.currentUser);
+      });
+    },
+    getPortalDetails: function () {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, getPortalDetails()); });
+    },
+    updatePortalDetails: function (data) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, updatePortalDetails(data)); });
+    },
+    updateModule: function (moduleId, data) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, updateModule(moduleId, data)); });
+    },
+    createModule: function (moduleId, data) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, createModule(moduleId, data)); });
+    },
+    createModules: function (modules) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, createModules(modules)); });
+    },
+    getModuleFieldOptions: function (refModuleId) {
+      return dataPromise.then(function () { return delay(MOCK_DELAY_MS, getModuleFieldOptions(refModuleId)); });
     }
   };
 })();

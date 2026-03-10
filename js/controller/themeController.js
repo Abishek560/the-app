@@ -27,18 +27,20 @@
     return "amber";
   }
 
-  function setTheme(mode) {
+  function setTheme(mode, options) {
     state.theme = mode;
-    try { global.localStorage.setItem(config.themeStorageKey, mode); } catch (e) {}
+    var persist = !(options && options.persist === false);
+    if (persist) try { global.localStorage.setItem(config.themeStorageKey, mode); } catch (e) {}
     themeView.applyTheme();
-    themeView.renderThemeOptions();
+    if (themeView.renderThemeOptions) themeView.renderThemeOptions();
   }
 
-  function setAccent(accent) {
+  function setAccent(accent, options) {
     state.accent = accent;
-    try { global.localStorage.setItem(config.accentStorageKey, accent); } catch (e) {}
+    var persist = !(options && options.persist === false);
+    if (persist) try { global.localStorage.setItem(config.accentStorageKey, accent); } catch (e) {}
     themeView.applyTheme();
-    themeView.renderAccentOptions();
+    if (themeView.renderAccentOptions) themeView.renderAccentOptions();
   }
 
   function bindThemeControls() {

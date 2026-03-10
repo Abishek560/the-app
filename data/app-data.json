@@ -1,0 +1,620 @@
+{
+  "mockData": {
+    "modules": {},
+    "mockData": {
+      "currentUser": {
+        "id": 1,
+        "name": "Priya",
+        "email": "priya@garage.example.com",
+        "initials": "P"
+      }
+    }
+  },
+  "populateData": {
+    "signupSample": {
+      "userName": "Demo User",
+      "userEmail": "demo@example.com",
+      "orgName": "My Garage"
+    },
+    "moduleSetupTemplates": {
+      "groups": [
+        {
+          "id": "general",
+          "label": {
+            "en": "General",
+            "ta": "பொது"
+          },
+          "modules": [
+            {
+              "id": "leads",
+              "label": {
+                "en": "Leads",
+                "ta": "லீட்கள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Customer name",
+                    "ta": "வாடிக்கையாளர் பெயர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Phone",
+                    "ta": "தொலைபேசி"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                }
+              ]
+            },
+            {
+              "id": "contacts",
+              "label": {
+                "en": "Contacts",
+                "ta": "தொடர்புகள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Name",
+                    "ta": "பெயர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Phone",
+                    "ta": "தொலைபேசி"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Email",
+                    "ta": "மின்னஞ்சல்"
+                  },
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "id": "tasks",
+              "label": {
+                "en": "Tasks",
+                "ta": "பணிகள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Title",
+                    "ta": "தலைப்பு"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                },
+                {
+                  "label": {
+                    "en": "Due date",
+                    "ta": "காலக்கெடு"
+                  },
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "id": "notes",
+              "label": {
+                "en": "Notes",
+                "ta": "குறிப்புகள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Title",
+                    "ta": "தலைப்பு"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Content",
+                    "ta": "உள்ளடக்கம்"
+                  },
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "automotive",
+          "label": {
+            "en": "Automotive",
+            "ta": "ஆட்டோமோட்டிவ்"
+          },
+          "modules": [
+            {
+              "id": "work_orders",
+              "label": {
+                "en": "Work orders",
+                "ta": "வேலை ஆர்டர்கள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Customer",
+                    "ta": "வாடிக்கையாளர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Vehicle",
+                    "ta": "வாகனம்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                }
+              ]
+            },
+            {
+              "id": "services",
+              "label": {
+                "en": "Services",
+                "ta": "சேவைகள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Service name",
+                    "ta": "சேவை பெயர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Price",
+                    "ta": "விலை"
+                  },
+                  "type": "number"
+                },
+                {
+                  "label": {
+                    "en": "Duration (mins)",
+                    "ta": "காலம் (நிமி)"
+                  },
+                  "type": "number"
+                }
+              ]
+            },
+            {
+              "id": "appointments",
+              "label": {
+                "en": "Appointments",
+                "ta": "நேரம் பதிவு"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Customer",
+                    "ta": "வாடிக்கையாளர்"
+                  },
+                  "type": "module",
+                  "refModuleIndex": 1
+                },
+                {
+                  "label": {
+                    "en": "Date",
+                    "ta": "தேதி"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                }
+              ]
+            },
+            {
+              "id": "vehicles",
+              "label": {
+                "en": "Vehicles",
+                "ta": "வாகனங்கள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Registration",
+                    "ta": "பதிவு"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Make / Model",
+                    "ta": "தயாரிப்பு / மாதிரி"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Customer",
+                    "ta": "வாடிக்கையாளர்"
+                  },
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "retail",
+          "label": {
+            "en": "Retail",
+            "ta": "சில்லறை"
+          },
+          "modules": [
+            {
+              "id": "products",
+              "label": {
+                "en": "Products",
+                "ta": "தயாரிப்புகள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Name",
+                    "ta": "பெயர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Price",
+                    "ta": "விலை"
+                  },
+                  "type": "number"
+                },
+                {
+                  "label": {
+                    "en": "SKU",
+                    "ta": "SKU"
+                  },
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "id": "invoice",
+              "label": {
+                "en": "Invoice",
+                "ta": "விலைப்பட்டியல்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Customer",
+                    "ta": "வாடிக்கையாளர்"
+                  },
+                  "type": "module",
+                  "refModuleIndex": 1
+                },
+                {
+                  "label": {
+                    "en": "Amount",
+                    "ta": "தொகை"
+                  },
+                  "type": "number"
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                }
+              ]
+            },
+            {
+              "id": "inventory",
+              "label": {
+                "en": "Inventory",
+                "ta": "சரக்கு"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Item",
+                    "ta": "பொருள்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Quantity",
+                    "ta": "அளவு"
+                  },
+                  "type": "number"
+                },
+                {
+                  "label": {
+                    "en": "SKU",
+                    "ta": "SKU"
+                  },
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "professional_services",
+          "label": {
+            "en": "Professional services",
+            "ta": "சிறப்பு சேவைகள்"
+          },
+          "modules": [
+            {
+              "id": "projects",
+              "label": {
+                "en": "Projects",
+                "ta": "திட்டங்கள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Name",
+                    "ta": "பெயர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Client",
+                    "ta": "வாடிக்கையாளர்"
+                  },
+                  "type": "module",
+                  "refModuleIndex": 1
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                }
+              ]
+            },
+            {
+              "id": "estimates",
+              "label": {
+                "en": "Estimates",
+                "ta": "மதிப்பீடுகள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Client",
+                    "ta": "வாடிக்கையாளர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Amount",
+                    "ta": "தொகை"
+                  },
+                  "type": "number"
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "healthcare",
+          "label": {
+            "en": "Healthcare",
+            "ta": "சுகாதாரம்"
+          },
+          "modules": [
+            {
+              "id": "patients",
+              "label": {
+                "en": "Patients",
+                "ta": "நோயாளிகள்"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Name",
+                    "ta": "பெயர்"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Phone",
+                    "ta": "தொலைபேசி"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Email",
+                    "ta": "மின்னஞ்சல்"
+                  },
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "id": "appointments_health",
+              "label": {
+                "en": "Appointments",
+                "ta": "நேரம் பதிவு"
+              },
+              "fields": [
+                {
+                  "label": {
+                    "en": "ID",
+                    "ta": "ஐடி"
+                  },
+                  "type": "id"
+                },
+                {
+                  "label": {
+                    "en": "Patient",
+                    "ta": "நோயாளி"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Date",
+                    "ta": "தேதி"
+                  },
+                  "type": "text"
+                },
+                {
+                  "label": {
+                    "en": "Status",
+                    "ta": "நிலை"
+                  },
+                  "type": "select"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -12,17 +12,24 @@
   var topbarView = theApp.view.topbar;
   var api = theApp.api;
 
-  var navEl = document.getElementById("nav-modules");
   var profileBtn = document.getElementById("profile-btn");
   var profilePanel = document.getElementById("profile-panel");
   var profileBackdrop = document.getElementById("profile-backdrop");
   var profileCloseBtn = document.querySelector && document.querySelector(".profile-close-btn");
+
+  function getNavEl() {
+    return document.getElementById("nav-modules");
+  }
 
   var moreMenuOpen = false;
   var profileOpen = false;
 
   function setActiveModule(moduleId) {
     state.activeModule = moduleId;
+    state.activeEntity = null;
+    state.creatingModule = null;
+    state.settingsOpen = false;
+    var navEl = getNavEl();
     topbarView.renderNav(navEl, { getMaxPrimary: topbarView.getMaxPrimary });
     bindNavListeners();
     if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
@@ -31,6 +38,7 @@
   }
 
   function closeMoreMenu() {
+    var navEl = getNavEl();
     var wrap = navEl && navEl.querySelector(".nav-more");
     var btn = wrap && wrap.querySelector(".more-btn");
     if (!wrap || !btn) return;
@@ -73,6 +81,7 @@
   }
 
   function bindNavListeners() {
+    var navEl = getNavEl();
     if (!navEl) return;
     navEl.querySelectorAll("button[data-module-id]").forEach(function (btn) {
       var id = btn.getAttribute("data-module-id");

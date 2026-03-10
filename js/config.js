@@ -19,7 +19,10 @@
     },
 
     /** Pagination */
-    pageSize: 25,
+    pageSize: 20,
+
+    /** Right-to-left layout (set true for RTL languages e.g. Arabic) */
+    rtl: false,
 
     /** Search input debounce (ms) */
     searchDebounceMs: 350,
@@ -27,6 +30,10 @@
     /** LocalStorage keys for theme persistence */
     themeStorageKey: "crm-theme",
     accentStorageKey: "crm-accent",
+    localeStorageKey: "crm-locale",
+
+    /** Default locale (en | ta). Language selector in profile panel. */
+    defaultLocale: "en",
 
     /** Allowed theme and accent values */
     themeModes: ["light", "dark", "system"],

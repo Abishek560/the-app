@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Glow – Car Garage</title>
+  <title>The App</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -21,38 +21,51 @@
     <aside id="profile-panel" class="profile-panel" aria-hidden="true">
       <div class="profile-panel-inner">
         <header class="profile-panel-header">
-          <div>
-            <div class="profile-panel-title">Profile</div>
+          <span class="profile-panel-title" data-i18n="profile">Profile</span>
+          <button class="profile-close-btn" type="button" aria-label="Close profile" data-i18n-aria-label="closeProfile">×</button>
+        </header>
+        <div class="profile-panel-hero">
+          <div class="profile-panel-avatar-wrap" aria-hidden="true">
+            <img id="profile-panel-avatar-img" class="profile-panel-avatar-img" src="" alt="" hidden />
+            <div id="profile-panel-avatar-initials" class="profile-panel-avatar-initials" aria-hidden="true">—</div>
+          </div>
+          <div class="profile-panel-hero-meta">
+            <div id="profile-hero-name" class="profile-hero-name">—</div>
             <div id="profile-subtitle" class="profile-panel-sub">Signed in</div>
           </div>
-          <button class="profile-close-btn" type="button" aria-label="Close profile">×</button>
-        </header>
+        </div>
         <div class="profile-panel-body">
-          <div class="profile-row">
-            <span class="profile-label">Name</span>
+          <div class="profile-detail-row">
+            <span class="profile-label" data-i18n="name">Name</span>
             <span id="profile-name" class="profile-value">—</span>
           </div>
-          <div class="profile-row">
-            <span class="profile-label">Role</span>
-            <span id="profile-role" class="profile-value">—</span>
-          </div>
-          <div class="profile-row">
-            <span class="profile-label">Email</span>
+          <div class="profile-detail-row">
+            <span class="profile-label" data-i18n="email">Email</span>
             <span id="profile-email" class="profile-value">—</span>
           </div>
           <div class="theme-section">
-            <div class="theme-section-title">Appearance</div>
+            <div class="theme-section-title" data-i18n="appearance">Appearance</div>
             <div class="theme-options" id="theme-options" role="group" aria-label="Theme">
-              <button type="button" class="theme-option" data-mode="light" aria-pressed="false">Light</button>
-              <button type="button" class="theme-option" data-mode="system" aria-pressed="false">System</button>
-              <button type="button" class="theme-option" data-mode="dark" aria-pressed="false">Dark</button>
+              <button type="button" class="theme-option" data-mode="light" aria-pressed="false" data-i18n="light">Light</button>
+              <button type="button" class="theme-option" data-mode="system" aria-pressed="false" data-i18n="system">System</button>
+              <button type="button" class="theme-option" data-mode="dark" aria-pressed="false" data-i18n="dark">Dark</button>
             </div>
-            <div class="theme-section-title" style="margin-top: 14px;">Accent</div>
+            <div class="theme-section-title theme-section-title--spaced" data-i18n="accent">Accent</div>
             <div class="accent-options" id="accent-options" role="group" aria-label="Accent color">
-              <button type="button" class="accent-swatch active" data-accent="amber" aria-label="Amber" title="Amber"></button>
-              <button type="button" class="accent-swatch" data-accent="blue" aria-label="Blue" title="Blue"></button>
-              <button type="button" class="accent-swatch" data-accent="green" aria-label="Green" title="Green"></button>
+              <button type="button" class="accent-swatch active" data-accent="amber" data-i18n-title="amber" aria-label="Amber" title="Amber"></button>
+              <button type="button" class="accent-swatch" data-accent="blue" data-i18n-title="blue" aria-label="Blue" title="Blue"></button>
+              <button type="button" class="accent-swatch" data-accent="green" data-i18n-title="green" aria-label="Green" title="Green"></button>
             </div>
+          </div>
+          <div class="theme-section language-section">
+            <div class="theme-section-title" data-i18n="language">Language</div>
+            <div class="language-options" id="language-options" role="group" aria-label="Language">
+              <button type="button" class="language-option" data-locale="en" aria-pressed="false" data-i18n="english">English</button>
+              <button type="button" class="language-option" data-locale="ta" aria-pressed="false" data-i18n="tamil">Tamil</button>
+            </div>
+          </div>
+          <div class="theme-section">
+            <a href="#" id="profile-settings-link" class="settings-link" data-i18n="settings">Settings</a>
           </div>
         </div>
       </div>
@@ -64,8 +77,21 @@
     </main>
   </div>
 
+  <div id="error-popup" class="error-popup" role="alertdialog" aria-modal="true" aria-labelledby="error-popup-title" aria-hidden="true">
+    <div class="error-popup-backdrop"></div>
+    <div class="error-popup-dialog">
+      <div id="error-popup-title" class="error-popup-title" data-i18n="error">Error</div>
+      <p class="error-popup-message" id="error-popup-message"></p>
+      <button type="button" class="error-popup-ok" id="error-popup-ok" data-i18n="ok">OK</button>
+    </div>
+  </div>
+
   <script src="mock-api.js"></script>
   <script src="js/config.js"></script>
+  <script src="js/locales/en.js"></script>
+  <script src="js/locales/ta.js"></script>
+  <script src="js/language.js"></script>
+  <script src="js/errorPopup.js"></script>
   <script src="js/api.js"></script>
   <script src="js/model/state.js"></script>
   <script src="js/view/themeView.js"></script>
@@ -73,11 +99,21 @@
   <script src="js/view/topbarView.js"></script>
   <script src="js/view/contentView.js"></script>
   <script src="js/view/entityModuleView.js"></script>
+  <script src="js/view/entityDetailView.js"></script>
+  <script src="js/view/entityFormView.js"></script>
+  <script src="js/view/settingsView.js"></script>
+  <script src="js/view/onboardingView.js"></script>
+  <script src="js/view/moduleSetupView.js"></script>
   <script src="js/view/dashboardView.js"></script>
   <script src="js/controller/themeController.js"></script>
   <script src="js/controller/dashboardController.js"></script>
   <script src="js/controller/navController.js"></script>
   <script src="js/controller/entityController.js"></script>
+  <script src="js/controller/entityDetailController.js"></script>
+  <script src="js/controller/entityFormController.js"></script>
+  <script src="js/controller/settingsController.js"></script>
+  <script src="js/controller/onboardingController.js"></script>
+  <script src="js/controller/moduleSetupController.js"></script>
   <script src="js/controller/appController.js"></script>
   <script src="js/main.js"></script>
 </body>
