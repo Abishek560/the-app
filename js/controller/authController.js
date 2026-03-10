@@ -1,5 +1,5 @@
 /**
- * Controller: Entry form (release mode) – store email + portalName in localStorage, proceed.
+ * Controller: Entry form (release mode) – email only; store email + default portalName, proceed.
  */
 (function (global) {
   "use strict";
@@ -10,24 +10,9 @@
   var state = theApp.state;
   var contentEl = document.getElementById("content");
 
-  function toPortalName(orgName) {
-    return (orgName || "portal").trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "") || "portal";
-  }
+  var DEFAULT_PORTAL = "default";
 
-  function switchToTestMode() {
-    try {
-      if (global.localStorage) {
-        global.localStorage.setItem("crm-testMode", "true");
-        global.location.reload();
-      }
-    } catch (e) {}
-  }
-
-  function handleSubmit(email, portalName, useTestMode) {
-    if (useTestMode) {
-      switchToTestMode();
-      return;
-    }
+  function handleSubmit(email, portalName) {
     try {
       if (global.localStorage) {
         global.localStorage.setItem("crm-email", String(email || "").trim());
@@ -49,17 +34,12 @@
   function bind(root) {
     if (!root) return;
     var form = root.querySelector("#auth-entry-form");
-    var testModeToggle = root.querySelector("#auth-test-mode-toggle");
     if (form) {
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         var email = (form.querySelector("[name=email]") || {}).value;
-        var portalNameRaw = (form.querySelector("[name=portalName]") || {}).value;
-        var useTestMode = testModeToggle && testModeToggle.checked;
         if (!email || !email.trim()) return;
-        var portalName = useTestMode ? "default" : toPortalName(portalNameRaw);
-        if (!useTestMode && (!portalNameRaw || !portalNameRaw.trim())) return;
-        handleSubmit(email.trim(), portalName, useTestMode);
+        handleSubmit(email.trim(), DEFAULT_PORTAL);
       });
     }
   }
@@ -72,8 +52,7 @@
 
   theApp.controller = theApp.controller || {};
   theApp.controller.auth = {
-    renderAuth: renderAuth,
-    switchToTestMode: switchToTestMode
+    renderAuth: renderAuth
   };
 
   global.theApp = theApp;
