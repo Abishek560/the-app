@@ -78,7 +78,11 @@
         state.settingsSection = "organization";
         state.settingsEditingOrg = false;
         state.settingsEditingModuleId = null;
-        renderContent();
+        if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+          theApp.router.navigateTo(theApp.router.getHashFromState());
+        } else {
+          renderContent();
+        }
       });
     }
     var profileBtnEl = document.getElementById("profile-btn");
@@ -100,30 +104,18 @@
   function renderContent() {
     if (!contentEl) return;
 
-    if (state.showAuthScreen) {
-      var authCtrl = theApp.controller.auth;
-      if (authCtrl && authCtrl.renderAuth) authCtrl.renderAuth();
-      return;
-    }
-
-    if (state.showOnboarding) {
-      if (state.showModuleSetup) {
-        var moduleSetupView = theApp.view.moduleSetup;
-        if (state.moduleSetupTemplates != null) {
-          contentEl.innerHTML = moduleSetupView ? moduleSetupView.render({ templateGroups: state.moduleSetupTemplates, templateSearch: state.templateSearch || "" }) : "<div class=\"module-setup-page\"><p>" + (language && language.t ? language.t("loading") : "Loading") + "…</p></div>";
-          if (theApp.controller.moduleSetup && theApp.controller.moduleSetup.bind) theApp.controller.moduleSetup.bind(contentEl);
-        } else {
-          contentEl.innerHTML = "<div class=\"module-setup-page\"><p>" + (language && language.t ? language.t("loading") : "Loading") + "…</p></div>";
-          var locale = (language && language.getLocale) ? language.getLocale() : "en";
-          (api.getModuleSetupTemplates ? api.getModuleSetupTemplates({ locale: locale }) : Promise.resolve(null)).then(function (templates) {
-            state.moduleSetupTemplates = templates;
-            if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") theApp.controller.app.renderContent();
-          });
-        }
+    if (state.showModuleSetup) {
+      var moduleSetupView = theApp.view.moduleSetup;
+      if (state.moduleSetupTemplates != null) {
+        contentEl.innerHTML = moduleSetupView ? moduleSetupView.render({ templateGroups: state.moduleSetupTemplates, templateSearch: state.templateSearch || "" }) : "<div class=\"module-setup-page\"><p>" + (language && language.t ? language.t("loading") : "Loading") + "…</p></div>";
+        if (theApp.controller.moduleSetup && theApp.controller.moduleSetup.bind) theApp.controller.moduleSetup.bind(contentEl);
       } else {
-        var onboardingView = theApp.view.onboarding;
-        contentEl.innerHTML = onboardingView ? onboardingView.render() : "<div class=\"signup-page\"><p>" + (language && language.t ? language.t("loading") : "Loading") + "…</p></div>";
-        if (theApp.controller.onboarding && theApp.controller.onboarding.bind) theApp.controller.onboarding.bind(contentEl);
+        contentEl.innerHTML = "<div class=\"module-setup-page\"><p>" + (language && language.t ? language.t("loading") : "Loading") + "…</p></div>";
+        var locale = (language && language.getLocale) ? language.getLocale() : "en";
+        (api.getModuleSetupTemplates ? api.getModuleSetupTemplates({ locale: locale }) : Promise.resolve(null)).then(function (templates) {
+          state.moduleSetupTemplates = templates;
+          if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") theApp.controller.app.renderContent();
+        });
       }
       return;
     }
@@ -200,6 +192,11 @@
     }
     var moduleId = state.activeModule;
     if (moduleId === "dashboard") {
+      if (!state.modules || state.modules.length === 0) {
+        var router = theApp.router;
+        if (router && router.navigateTo) router.navigateTo("#/" + encodeURIComponent(state.portalName || "default") + "/setup");
+        return;
+      }
       contentEl.innerHTML = dashboardView.render();
       if (dashboardController && dashboardController.bind) dashboardController.bind(contentEl);
       return;
@@ -240,7 +237,11 @@
         state.settingsEditingOrg = false;
         state.settingsEditingModuleId = null;
         if (navController.closeProfilePanel) navController.closeProfilePanel();
-        renderContent();
+        if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+          theApp.router.navigateTo(theApp.router.getHashFromState());
+        } else {
+          renderContent();
+        }
       });
     }
     var signOutBtn = document.getElementById("profile-sign-out-btn");
@@ -248,11 +249,13 @@
       signOutBtn.setAttribute("data-crm-bound", "true");
       signOutBtn.addEventListener("click", function (e) {
         e.preventDefault();
-        var signOut = global.firebaseAuthSignOut;
-        var auth = global.firebaseAuth;
-        if (signOut && auth) {
-          signOut(auth);
-        }
+        try {
+          if (global.localStorage) {
+            global.localStorage.removeItem("crm-email");
+            global.localStorage.removeItem("crm-portalName");
+          }
+          if (global.location && global.location.reload) global.location.reload();
+        } catch (err) {}
       });
     }
   }
@@ -317,6 +320,7 @@
     var locale = (language && language.getLocale) ? language.getLocale() : "en";
     return (api.getBootstrap ? api.getBootstrap({ locale: locale, portalName: state.portalName }) : Promise.resolve({})).then(function (bootstrap) {
       if (bootstrap.user != null) state.currentUser = bootstrap.user;
+      else if (state.email) state.currentUser = { email: state.email, name: state.portalName || state.email, initials: (state.email.trim()[0] || "U").toUpperCase() };
       if (bootstrap.portal != null) state.portal = bootstrap.portal;
       if (bootstrap.modules && bootstrap.modules.length) state.modules = ensureStaticModules(bootstrap.modules);
       if (!state.modules || state.modules.length === 0) state.modules = [];
@@ -324,13 +328,16 @@
       state.showAuthScreen = false;
       setupTopbarForMainApp();
       renderContent();
+      var h = (typeof global !== "undefined" && global.location && global.location.hash) || "";
+      if ((!h || h === "#" || h === "#/") && theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+        theApp.router.navigateTo(theApp.router.getHashFromState());
+      }
       if (profileBtn) profileBtn.addEventListener("click", function (e) { e.stopPropagation(); navController.toggleProfilePanel(); });
     });
   }
 
   /**
-   * Bootstraps the app: theme, modules, nav, content, global listeners.
-   * Test mode: show onboarding. Release mode: auth screen if not signed in, else main app.
+   * Bootstraps the app: theme, router, then load bootstrap and render. Session check is in main.js.
    */
   async function init() {
     theApp.controller.theme.bindThemeControls();
@@ -338,75 +345,17 @@
     if (language && language.init) language.init();
     if (contentEl) contentEl.innerHTML = contentView.renderInitialLoading();
 
-    var locale = (language && language.getLocale) ? language.getLocale() : "en";
-    var needOnboarding = true;
-
-    try {
-      if (global.localStorage && global.localStorage.getItem("crm-testMode") === "true") {
-        state.testMode = true;
-      }
-    } catch (e) {}
-
-    if (state.testMode) {
-      needOnboarding = true;
-      state.showOnboarding = true;
-      state.showAuthScreen = false;
-    } else {
-      needOnboarding = false;
-      state.showAuthScreen = true;
-      state.showOnboarding = false;
-      var firebaseReady = (global.firebaseReady && typeof global.firebaseReady.then === "function") ? global.firebaseReady : Promise.resolve();
-      var firebaseTimeout = new Promise(function (resolve) { setTimeout(resolve, 3000); });
-      Promise.race([firebaseReady, firebaseTimeout]).then(function () {
-        var onAuthChanged = global.firebaseAuthOnStateChanged;
-        var auth = global.firebaseAuth;
-        if (onAuthChanged && auth) {
-          needOnboarding = false;
-          onAuthChanged(auth, function (user) {
-            if (user) {
-              state.authUser = user;
-              state.showAuthScreen = false;
-              var authCtrl = theApp.controller.auth;
-              var loadPortal = authCtrl && authCtrl.loadPortalForUser ? authCtrl.loadPortalForUser(user.uid) : Promise.resolve(null);
-              loadPortal.then(function (portalName) {
-                state.portalName = portalName || "";
-                try { if (global.localStorage && portalName) global.localStorage.setItem("crm-portalName", portalName); } catch (e) {}
-                loadAndShowMainApp();
-              }).catch(function () {
-                state.portalName = "";
-                loadAndShowMainApp();
-              });
-            } else {
-              state.authUser = null;
-              state.portalName = "";
-              state.showAuthScreen = true;
-              state.showOnboarding = false;
-              if (navController.closeProfilePanel) navController.closeProfilePanel();
-              setupTopbarForOnboarding();
-              renderContent();
-            }
-          });
-        } else {
-          needOnboarding = false;
-          state.showAuthScreen = true;
-          state.showOnboarding = false;
-        }
-      });
-    }
-
-    if (!state.modules || state.modules.length === 0) state.modules = [];
-
     if (typeof document.documentElement.setAttribute === "function") document.documentElement.setAttribute("dir", theApp.config.rtl ? "rtl" : "ltr");
     if (language && language.applyToDocument) language.applyToDocument();
 
-    if (needOnboarding) {
-      state.showOnboarding = true;
+    if (theApp.router && theApp.router.init) theApp.router.init();
+
+    if (state.showModuleSetup) {
       setupTopbarForOnboarding();
-    } else if (state.showAuthScreen) {
-      setupTopbarForOnboarding();
+    } else {
+      loadAndShowMainApp();
     }
 
-    renderContent();
     bindLanguageOptions();
     bindSettingsLink();
 
@@ -432,7 +381,7 @@
       }
     });
 
-    if (!needOnboarding && !state.showAuthScreen && profileBtn) {
+    if (profileBtn) {
       profileBtn.addEventListener("click", function (e) {
         e.stopPropagation();
         navController.toggleProfilePanel();
@@ -490,6 +439,7 @@
     renderContent: renderContent,
     init: init,
     enterMainApp: enterMainApp,
+    loadAndShowMainApp: loadAndShowMainApp,
     ensureStaticModules: ensureStaticModules
   };
 

@@ -134,6 +134,7 @@
     testModeHint: "No account, demo data only",
     createAccount: "Create account",
     signOut: "Sign out",
+    clearSession: "Clear session",
     continue: "Continue",
     enterEmailToContinue: "Enter your email to continue",
     step1Of2: "Step 1 of 2",

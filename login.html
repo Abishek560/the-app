@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>The App – Sign in</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <main class="module-container" role="main">
+      <div class="module-content" id="content"></div>
+    </main>
+  </div>
+
+  <div id="error-popup" class="error-popup" role="alertdialog" aria-modal="true" aria-labelledby="error-popup-title" aria-hidden="true">
+    <div class="error-popup-backdrop"></div>
+    <div class="error-popup-dialog">
+      <div id="error-popup-title" class="error-popup-title" data-i18n="error">Error</div>
+      <p class="error-popup-message" id="error-popup-message"></p>
+      <button type="button" class="error-popup-ok" id="error-popup-ok" data-i18n="ok">OK</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/firebase-init.js"></script>
+  <script src="mock-api.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/locales/en.js"></script>
+  <script src="js/locales/ta.js"></script>
+  <script src="js/language.js"></script>
+  <script src="js/errorPopup.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/model/state.js"></script>
+  <script src="js/view/themeView.js"></script>
+  <script src="js/view/authView.js"></script>
+  <script src="js/view/onboardingView.js"></script>
+  <script src="js/controller/themeController.js"></script>
+  <script src="js/controller/authController.js"></script>
+  <script src="js/controller/onboardingController.js"></script>
+  <script src="js/main-login.js"></script>
+</body>
+</html>

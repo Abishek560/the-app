@@ -1,5 +1,5 @@
 /**
- * Entry point: apply saved theme immediately (no flash), then bootstrap the app.
+ * Entry point for index.html: session check, then bootstrap app with hash router.
  */
 (function (global) {
   "use strict";
@@ -19,8 +19,15 @@
 
   function run() {
     var theApp = global.theApp;
-    if (!theApp || !theApp.controller || !theApp.controller.app || !theApp.controller.app.init) {
-      console.error("App not ready. Ensure script load order: config → api → model → view → controller → main.");
+    if (!theApp || !theApp.state) return;
+    var state = theApp.state;
+    var hasSession = !!(state.email && state.email.trim() && state.portalName && state.portalName.trim());
+    if (!hasSession) {
+      global.location.href = "login.html";
+      return;
+    }
+    if (!theApp.controller || !theApp.controller.app || !theApp.controller.app.init) {
+      console.error("App not ready. Ensure script load order: config → api → model → view → controller → router → main.");
       return;
     }
     theApp.controller.app.init();

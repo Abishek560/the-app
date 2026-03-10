@@ -48,3 +48,9 @@ Everything is attached to `window.theApp`:
 - **To add a module** – Add an entry to `modulesObj` and a data array in mock (e.g. `mockDataObj[moduleId]`). Nav and list work for any module id.
 - **Entity detail** – Clicking a list row sets `state.activeEntity` and shows read-only detail; Edit opens the form; Back returns to list.
 - **Create** – Add button sets `state.creatingModule` and shows the create form. Cancel/Save return to list.
+
+## Documentation
+
+- **[API.md](API.md)** – REST API reference (endpoints, request/response).
+- **[API_CALL_STACK.md](API_CALL_STACK.md)** – API call flow from signup/login through bootstrap, entity CRUD, and mock fallback.
+- **[DYNAMICITY.md](DYNAMICITY.md)** – Data-driven behaviour: field types, state, bootstrap.

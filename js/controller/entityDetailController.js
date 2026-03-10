@@ -19,7 +19,9 @@
     if (backBtn) {
       backBtn.addEventListener("click", function () {
         state.activeEntity = null;
-        if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
+        if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+          theApp.router.navigateTo(theApp.router.getHashFromState());
+        } else if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
           theApp.controller.app.renderContent();
         }
       });
@@ -29,7 +31,9 @@
     if (editBtn) {
       editBtn.addEventListener("click", function () {
         state.entityViewMode = "edit";
-        if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
+        if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+          theApp.router.navigateTo(theApp.router.getHashFromState());
+        } else if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
           theApp.controller.app.renderContent();
         }
       });

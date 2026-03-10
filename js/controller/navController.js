@@ -32,7 +32,9 @@
     var navEl = getNavEl();
     topbarView.renderNav(navEl, { getMaxPrimary: topbarView.getMaxPrimary });
     bindNavListeners();
-    if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
+    if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+      theApp.router.navigateTo(theApp.router.getHashFromState());
+    } else if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
       theApp.controller.app.renderContent();
     }
   }

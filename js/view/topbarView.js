@@ -113,7 +113,33 @@
    */
   function hydrateProfileFromState() {
     var user = state.currentUser;
-    if (!user) return;
+    if (!user) {
+      if (state.email) {
+        var initial = (state.email && state.email.trim()[0]) || "U";
+        initial = initial.toUpperCase();
+        var headerAvatar = document.querySelector(".profile-btn .profile-avatar");
+        if (headerAvatar) headerAvatar.textContent = initial;
+        var panelImg = document.getElementById("profile-panel-avatar-img");
+        var panelInitials = document.getElementById("profile-panel-avatar-initials");
+        if (panelImg && panelInitials) {
+          panelImg.setAttribute("hidden", "hidden");
+          panelImg.src = "";
+          panelInitials.textContent = initial;
+          panelInitials.removeAttribute("hidden");
+        }
+        var heroName = document.getElementById("profile-hero-name");
+        if (heroName) heroName.textContent = state.email;
+        var nameEl = document.getElementById("profile-name");
+        var emailEl = document.getElementById("profile-email");
+        if (nameEl) nameEl.textContent = state.portalName || "—";
+        if (emailEl) emailEl.textContent = state.email || "—";
+      }
+      var signOutSection = document.getElementById("profile-sign-out-section");
+      if (signOutSection && !state.testMode && state.email && state.portalName) {
+        signOutSection.removeAttribute("hidden");
+      }
+      return;
+    }
     var initial = (user.initials && user.initials.trim()[0]) || (user.name && user.name.trim()[0]) || "U";
     initial = initial.toUpperCase();
 
@@ -151,7 +177,7 @@
 
     var signOutSection = document.getElementById("profile-sign-out-section");
     if (signOutSection) {
-      if (state.authUser && !state.testMode) {
+      if (!state.testMode && state.email && state.portalName) {
         signOutSection.removeAttribute("hidden");
       } else {
         signOutSection.setAttribute("hidden", "hidden");
@@ -165,9 +191,10 @@
   function renderSettingsBarHTML() {
     var backT = (t("back") || "Back").replace(/</g, "&lt;").replace(/"/g, "&quot;");
     var setupT = (t("setup") || "Setup").replace(/</g, "&lt;");
+    var avatarLetter = (state.currentUser && state.currentUser.initials) ? state.currentUser.initials : (state.email && state.email.trim()[0]) ? state.email.trim()[0].toUpperCase() : "A";
     return "<button type=\"button\" id=\"settings-topbar-back\" class=\"settings-topbar-back\" aria-label=\"" + backT + "\">← " + backT + "</button>" +
       "<span class=\"settings-topbar-title\">" + setupT + "</span>" +
-      "<button id=\"profile-btn\" class=\"profile-btn\" aria-label=\"Open profile\"><span class=\"profile-avatar\">" + (state.currentUser && state.currentUser.initials ? state.currentUser.initials : "A") + "</span></button>";
+      "<button id=\"profile-btn\" class=\"profile-btn\" aria-label=\"Open profile\"><span class=\"profile-avatar\">" + avatarLetter + "</span></button>";
   }
 
   /**

@@ -35,14 +35,6 @@
     return pn ? "portals/" + pn : "";
   }
 
-  function appendAuthToken(url) {
-    var getToken = (typeof window !== "undefined" && window.getFirebaseIdToken) ? window.getFirebaseIdToken() : Promise.resolve(null);
-    return getToken.then(function (token) {
-      if (token) return url + (url.indexOf("?") >= 0 ? "&" : "?") + "auth=" + encodeURIComponent(token);
-      return url;
-    });
-  }
-
   /** Persist data to Firebase. Test mode: no-op. Release: write to portals/{portalName}/... */
   function persistToFirebase(path, data) {
     if (isTestMode()) return;
@@ -56,12 +48,10 @@
     else if (rel.indexOf("mockData/mockData/") === 0) rel = "entities/" + rel.replace("mockData/mockData/", "");
     var fullPath = basePath + "/" + rel;
     var url = FIREBASE_RTDB_BASE + "/" + fullPath + ".json";
-    appendAuthToken(url).then(function (authUrl) {
-      return fetch(authUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+    fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
     }).catch(function (err) { console.warn("Firebase persist failed:", fullPath, err && err.message); });
   }
 
@@ -69,9 +59,6 @@
     return fetch(url).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
   }
 
-  function loadDataFromUrlWithAuth(url) {
-    return appendAuthToken(url).then(function (authUrl) { return loadDataFromUrl(authUrl); });
-  }
 
   function tryLoadAppData() {
     if (typeof fetch === "undefined") return Promise.resolve(applyData(null, null));
@@ -423,7 +410,7 @@
 
   function loadPortalData(portalName) {
     var url = FIREBASE_RTDB_BASE + "/portals/" + encodeURIComponent(portalName) + ".json";
-    return loadDataFromUrlWithAuth(url).then(function (data) {
+    return loadDataFromUrl(url).then(function (data) {
       if (data && data.portal) portalDetailsStore = data.portal;
       if (data && data.currentUser) mockDataObj.currentUser = data.currentUser;
       if (data && data.modules && typeof data.modules === "object") modulesObj = data.modules;

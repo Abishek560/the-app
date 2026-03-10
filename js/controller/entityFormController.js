@@ -41,7 +41,9 @@
         } else {
           state.entityViewMode = "detail";
         }
-        if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
+        if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+          theApp.router.navigateTo(theApp.router.getHashFromState());
+        } else if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
           theApp.controller.app.renderContent();
         }
       });
@@ -59,7 +61,9 @@
         data.list = null;
         data.page = 1;
       }
-      if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
+      if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+        theApp.router.navigateTo(theApp.router.getHashFromState());
+      } else if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
         theApp.controller.app.renderContent();
       }
     }

@@ -35,11 +35,12 @@
     var sections = getSections();
     var dashboardTitle = getModuleLabel("dashboard").replace(/</g, "&lt;");
     var populateDataT = (t("populateData") || "Populate data").replace(/</g, "&lt;");
+    var showPopulate = state.testMode === true;
     var parts = [
       "<div class=\"card dashboard\">",
       "<div class=\"dashboard-header\">",
       "<h2 class=\"dashboard-title\">" + dashboardTitle + "</h2>",
-      "<button type=\"button\" class=\"dashboard-populate-btn\" id=\"dashboard-populate-data\" aria-label=\"" + populateDataT + "\">" + populateDataT + "</button>",
+      (showPopulate ? "<button type=\"button\" class=\"dashboard-populate-btn\" id=\"dashboard-populate-data\" aria-label=\"" + populateDataT + "\">" + populateDataT + "</button>" : ""),
       "</div>",
       "<div class=\"dashboard-grid\">"
     ];

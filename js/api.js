@@ -38,7 +38,7 @@
   }
 
   function getBasePath() {
-    var pn = (theApp.state && theApp.state.portal && theApp.state.portal.portalName) || (config.api && config.api.portalName) || "default";
+    var pn = (theApp.state && theApp.state.portalName) || (theApp.state && theApp.state.portal && theApp.state.portal.portalName) || (config.api && config.api.portalName) || "default";
     return baseRoot + "/portals/" + pn;
   }
 

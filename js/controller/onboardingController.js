@@ -127,8 +127,20 @@
         };
 
         function goToModuleSetup() {
-          state.showModuleSetup = true;
-          if (theApp.controller.app && theApp.controller.app.renderContent) theApp.controller.app.renderContent();
+          try {
+            if (global.localStorage) {
+              global.localStorage.setItem("crm-email", String(userData.email || "").trim());
+              global.localStorage.setItem("crm-portalName", String(portalName || "").trim());
+            }
+            state.email = String(userData.email || "").trim();
+            state.portalName = String(portalName || "").trim();
+          } catch (e) {}
+          if (theApp.controller.app && theApp.controller.app.renderContent) {
+            state.showModuleSetup = true;
+            theApp.controller.app.renderContent();
+          } else {
+            global.location.href = "index.html#/" + encodeURIComponent(portalName) + "/setup";
+          }
         }
 
         var api = theApp.api;

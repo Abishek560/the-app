@@ -134,6 +134,7 @@
     testModeHint: "கணக்கு இல்லை, டெமோ தரவு மட்டுமே",
     createAccount: "கணக்கு உருவாக்கு",
     signOut: "வெளியேறு",
+    clearSession: "அமர்வை அழி",
     continue: "தொடர்",
     enterEmailToContinue: "தொடர உங்கள் மின்னஞ்சலை உள்ளிடவும்",
     step1Of2: "படி 1 / 2",

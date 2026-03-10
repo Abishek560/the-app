@@ -25,7 +25,11 @@
         var section = btn.getAttribute("data-settings-section");
         if (section) {
           state.settingsSection = section;
-          refreshSettingsContent();
+          if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+            theApp.router.navigateTo(theApp.router.getHashFromState());
+          } else {
+            refreshSettingsContent();
+          }
         }
       });
     });

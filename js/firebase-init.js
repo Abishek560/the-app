@@ -1,16 +1,7 @@
 /**
- * Firebase initialization. Loaded as ES module; exposes app and auth on window for the rest of the app.
+ * Firebase initialization. Database only (no Auth). Email + portalName stored in localStorage.
  */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  fetchSignInMethodsForEmail
-} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
 const firebaseConfig = {
@@ -23,27 +14,15 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getDatabase(app);
 
 if (typeof window !== "undefined") {
   window.firebaseApp = app;
-  window.firebaseAuth = auth;
   window.firebaseDb = db;
   window.firebaseDbRef = ref;
   window.firebaseDbSet = set;
   window.firebaseDbGet = get;
-  window.firebaseAuthSignIn = signInWithEmailAndPassword;
-  window.firebaseAuthSignUp = createUserWithEmailAndPassword;
-  window.firebaseFetchSignInMethodsForEmail = fetchSignInMethodsForEmail;
-  window.firebaseAuthSignOut = signOut;
-  window.firebaseAuthUpdateProfile = updateProfile;
-  window.firebaseAuthOnStateChanged = onAuthStateChanged;
   window.firebaseReady = Promise.resolve(app);
-  window.getFirebaseIdToken = function () {
-    var u = auth.currentUser;
-    return u ? u.getIdToken() : Promise.resolve(null);
-  };
 }
 
-export { app, auth, db, ref, set, get, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, onAuthStateChanged, fetchSignInMethodsForEmail };
+export { app, db, ref, set, get };

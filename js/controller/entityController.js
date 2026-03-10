@@ -228,7 +228,9 @@
     if (!addBtn) return;
     addBtn.addEventListener("click", function () {
       state.creatingModule = moduleId;
-      if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
+      if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+        theApp.router.navigateTo(theApp.router.getHashFromState());
+      } else if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
         theApp.controller.app.renderContent();
       }
     });
@@ -258,7 +260,9 @@
       function openDetail() {
         state.activeEntity = { moduleId: moduleId, entityId: entityId };
         state.entityViewMode = "detail";
-        if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
+        if (theApp.router && theApp.router.navigateTo && theApp.router.getHashFromState) {
+          theApp.router.navigateTo(theApp.router.getHashFromState());
+        } else if (theApp.controller.app && typeof theApp.controller.app.renderContent === "function") {
           theApp.controller.app.renderContent();
         }
       }

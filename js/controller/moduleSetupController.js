@@ -600,7 +600,9 @@
           }
           return;
         }
-        state.setupModules = getPopulateAndFinishModules();
+        if (state.testMode) {
+          state.setupModules = getPopulateAndFinishModules();
+        }
         list = state.setupModules || [];
         var payload = list.map(function (m, i) {
           var fields = (m.fields || []).filter(function (f) { return (f.id || "").trim(); }).map(function (f) {
@@ -628,7 +630,12 @@
             state.modules = ensureStatic ? ensureStatic(fallback) : fallback;
             state.showModuleSetup = false;
             state.showOnboarding = false;
-            if (theApp.controller.app && theApp.controller.app.enterMainApp) theApp.controller.app.enterMainApp();
+            if (theApp.router && theApp.router.navigateTo) {
+              var pn = (state.portalName && state.portalName.trim()) || "default";
+              theApp.router.navigateTo("#/" + encodeURIComponent(pn) + "/dashboard");
+            } else if (theApp.controller.app && theApp.controller.app.enterMainApp) {
+              theApp.controller.app.enterMainApp();
+            }
             return Promise.resolve();
           }
           return api.createModules(payload).then(function (created) {
@@ -636,7 +643,12 @@
             state.modules = ensureStatic ? ensureStatic(created) : created;
             state.showModuleSetup = false;
             state.showOnboarding = false;
-            if (theApp.controller.app && theApp.controller.app.enterMainApp) theApp.controller.app.enterMainApp();
+            if (theApp.router && theApp.router.navigateTo) {
+              var pn = (state.portalName && state.portalName.trim()) || "default";
+              theApp.router.navigateTo("#/" + encodeURIComponent(pn) + "/dashboard");
+            } else if (theApp.controller.app && theApp.controller.app.enterMainApp) {
+              theApp.controller.app.enterMainApp();
+            }
           });
         });
         if (theApp.withButtonLoading && btnAfterRender && finishPromise) theApp.withButtonLoading(btnAfterRender, finishPromise);

@@ -89,6 +89,7 @@ Then open `http://localhost:3000` (or the port your server uses).
     │   └── ta.js           # Tamil strings
     ├── README.md           # MVC, load order, namespace (theApp)
     ├── API.md              # REST API reference (portals, users, modules, entities)
+    ├── API_CALL_STACK.md   # API call flow: signup/login, bootstrap, entity CRUD, mock fallback
     └── DYNAMICITY.md       # Data-driven behaviour: field types, state, bootstrap
 ```
 
@@ -119,6 +120,7 @@ The app calls a REST-style API for portals, users, modules, and entity CRUD. By 
 
 - Set `config.api.baseURL` and ensure CORS if needed.
 - Implement the endpoints described in [js/API.md](js/API.md). On failure (e.g. 404 or network error), the client falls back to the mock.
+- See [js/API_CALL_STACK.md](js/API_CALL_STACK.md) for the full API call flow from signup/login through entity CRUD.
 
 Bootstrap flow: `getBootstrap({ locale })` → `{ user, portal, modules }` → stored in `state`; nav and content are built from `state.modules`.
 

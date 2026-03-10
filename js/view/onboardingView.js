@@ -89,7 +89,7 @@
       "</div>" +
       "<div class=\"signup-actions\">" +
       "<button type=\"submit\" class=\"signup-btn\" id=\"signup-submit\">" + getStarted + "</button>" +
-      "<button type=\"button\" class=\"signup-populate-link\" id=\"signup-populate\" title=\"" + escapeHtml(t("populateTitle") || "Fill form with sample data for testing") + "\">" + escapeHtml(t("fillWithSampleData") || "Fill with sample data") + "</button>" +
+      (state.testMode ? "<button type=\"button\" class=\"signup-populate-link\" id=\"signup-populate\" title=\"" + escapeHtml(t("populateTitle") || "Fill form with sample data for testing") + "\">" + escapeHtml(t("fillWithSampleData") || "Fill with sample data") + "</button>" : "") +
       "<a href=\"#\" class=\"auth-link auth-link--muted\" id=\"onboarding-sign-in-link\">" + escapeHtml(t("signIn") || "Sign in") + "</a>" +
       "</div>" +
       "</form>" +

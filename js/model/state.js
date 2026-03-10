@@ -44,13 +44,13 @@
     moduleFieldOptions: {},
     /** List view mode for entity modules: 'table' | 'spreadsheet' | 'tile'. Applied to all modules. */
     listViewMode: "table",
-    /** true = test mode (local mock data, no Firebase). false = release mode (Firebase Auth + portal-scoped data). */
+    /** true = test mode (local mock data, no Firebase). false = release mode (portal-scoped data). */
     testMode: false,
-    /** Firebase Auth user when signed in (release mode). null when test mode or signed out. */
-    authUser: null,
-    /** Current portal name; session context in release mode. */
+    /** User email; stored in localStorage. */
+    email: "",
+    /** Current portal name; stored in localStorage. Used for API and Firebase paths. */
     portalName: "",
-    /** When true, show auth screen (login/signup) instead of main app. Release mode only. */
+    /** When true, show entry form (email + org) instead of main app. Release mode only. */
     showAuthScreen: false
   };
 
@@ -59,8 +59,10 @@
       if (global.localStorage && global.localStorage.getItem("crm-testMode") === "true") {
         state.testMode = true;
       }
-      var stored = global.localStorage && global.localStorage.getItem("crm-portalName");
-      if (stored && typeof stored === "string") state.portalName = stored;
+      var storedEmail = global.localStorage && global.localStorage.getItem("crm-email");
+      if (storedEmail && typeof storedEmail === "string") state.email = storedEmail;
+      var storedPortal = global.localStorage && global.localStorage.getItem("crm-portalName");
+      if (storedPortal && typeof storedPortal === "string") state.portalName = storedPortal;
     } catch (e) {}
   })();
 

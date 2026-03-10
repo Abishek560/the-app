@@ -36,7 +36,8 @@
     var fieldsHeading = escapeHtml((t("fields") || "Fields"));
     var relatedFieldsHeading = escapeHtml(t("relatedFields") || "Related fields");
     var moduleNameHeading = escapeHtml(t("moduleName") || "Module name");
-    var populateAndFinish = escapeHtml(t("populateAndFinish") || "Populate and finish");
+    var isTestMode = state.testMode === true;
+    var populateAndFinish = escapeHtml(isTestMode ? (t("populateAndFinish") || "Populate and finish") : (t("finish") || "Finish"));
     var remove = escapeHtml(t("remove"));
 
     var modules = state.setupModules || [];
