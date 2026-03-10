@@ -130,6 +130,8 @@
     signUp: "Sign up",
     password: "Password",
     useTestMode: "Use test mode",
+    testModeToggle: "Use test mode",
+    testModeHint: "No account, demo data only",
     createAccount: "Create account",
     signOut: "Sign out",
     step1Of2: "Step 1 of 2",

@@ -352,39 +352,46 @@
       state.showOnboarding = true;
       state.showAuthScreen = false;
     } else {
-      var onAuthChanged = global.firebaseAuthOnStateChanged;
-      var auth = global.firebaseAuth;
-      if (onAuthChanged && auth) {
-        needOnboarding = false;
-        onAuthChanged(auth, function (user) {
-          if (user) {
-            state.authUser = user;
-            state.showAuthScreen = false;
-            var authCtrl = theApp.controller.auth;
-            var loadPortal = authCtrl && authCtrl.loadPortalForUser ? authCtrl.loadPortalForUser(user.uid) : Promise.resolve(null);
-            loadPortal.then(function (portalName) {
-              state.portalName = portalName || "";
-              try { if (global.localStorage && portalName) global.localStorage.setItem("crm-portalName", portalName); } catch (e) {}
-              loadAndShowMainApp();
-            }).catch(function () {
+      needOnboarding = false;
+      state.showAuthScreen = true;
+      state.showOnboarding = false;
+      var firebaseReady = (global.firebaseReady && typeof global.firebaseReady.then === "function") ? global.firebaseReady : Promise.resolve();
+      var firebaseTimeout = new Promise(function (resolve) { setTimeout(resolve, 3000); });
+      Promise.race([firebaseReady, firebaseTimeout]).then(function () {
+        var onAuthChanged = global.firebaseAuthOnStateChanged;
+        var auth = global.firebaseAuth;
+        if (onAuthChanged && auth) {
+          needOnboarding = false;
+          onAuthChanged(auth, function (user) {
+            if (user) {
+              state.authUser = user;
+              state.showAuthScreen = false;
+              var authCtrl = theApp.controller.auth;
+              var loadPortal = authCtrl && authCtrl.loadPortalForUser ? authCtrl.loadPortalForUser(user.uid) : Promise.resolve(null);
+              loadPortal.then(function (portalName) {
+                state.portalName = portalName || "";
+                try { if (global.localStorage && portalName) global.localStorage.setItem("crm-portalName", portalName); } catch (e) {}
+                loadAndShowMainApp();
+              }).catch(function () {
+                state.portalName = "";
+                loadAndShowMainApp();
+              });
+            } else {
+              state.authUser = null;
               state.portalName = "";
-              loadAndShowMainApp();
-            });
-          } else {
-            state.authUser = null;
-            state.portalName = "";
-            state.showAuthScreen = true;
-            state.showOnboarding = false;
-            if (navController.closeProfilePanel) navController.closeProfilePanel();
-            setupTopbarForOnboarding();
-            renderContent();
-          }
-        });
-      } else {
-        needOnboarding = true;
-        state.showOnboarding = true;
-        state.showAuthScreen = false;
-      }
+              state.showAuthScreen = true;
+              state.showOnboarding = false;
+              if (navController.closeProfilePanel) navController.closeProfilePanel();
+              setupTopbarForOnboarding();
+              renderContent();
+            }
+          });
+        } else {
+          needOnboarding = false;
+          state.showAuthScreen = true;
+          state.showOnboarding = false;
+        }
+      });
     }
 
     if (!state.modules || state.modules.length === 0) state.modules = [];
@@ -394,6 +401,8 @@
 
     if (needOnboarding) {
       state.showOnboarding = true;
+      setupTopbarForOnboarding();
+    } else if (state.showAuthScreen) {
       setupTopbarForOnboarding();
     }
 

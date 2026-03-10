@@ -29,6 +29,14 @@
   var config = theApp.config;
   var baseRoot = (config.api.baseURL || "").replace(/\/$/, "") + "/api/" + config.api.version;
 
+  function isTestMode() {
+    try {
+      if (typeof global !== "undefined" && global.localStorage && global.localStorage.getItem("crm-testMode") === "true") return true;
+      if (theApp.state && theApp.state.testMode === true) return true;
+    } catch (e) {}
+    return false;
+  }
+
   function getBasePath() {
     var pn = (theApp.state && theApp.state.portal && theApp.state.portal.portalName) || (config.api && config.api.portalName) || "default";
     return baseRoot + "/portals/" + pn;
@@ -55,6 +63,7 @@
   }
 
   function apiGet(resource, queryParams, opts) {
+    if (isTestMode()) return Promise.resolve(null);
     var url = buildUrl(resource, queryParams, opts);
     return fetch(url, { method: "GET", headers: { Accept: "application/json" } })
       .then(function (res) { return res.ok ? parseBody(res) : null; })
@@ -62,6 +71,7 @@
   }
 
   function apiPost(resource, body, opts) {
+    if (isTestMode()) return Promise.resolve(null);
     var url = buildUrl(resource, null, opts);
     return fetch(url, {
       method: "POST",
@@ -73,6 +83,7 @@
   }
 
   function apiPut(resource, body, opts) {
+    if (isTestMode()) return Promise.resolve(null);
     var url = buildUrl(resource, null, opts);
     return fetch(url, {
       method: "PUT",

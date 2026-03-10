@@ -55,6 +55,20 @@
     if (!root) return;
 
     var form = root.querySelector("#signup-form");
+    try {
+      var prefill = global.sessionStorage && global.sessionStorage.getItem("crm-signup-prefill");
+      if (prefill && form) {
+        var vals = {};
+        try {
+          vals = JSON.parse(prefill);
+          global.sessionStorage.removeItem("crm-signup-prefill");
+        } catch (e) {}
+        if (vals && (vals.userName || vals.userEmail || vals.orgName)) {
+          setFormValues(form, vals);
+        }
+      }
+    } catch (e) {}
+
     if (form) {
       var populateBtn = root.querySelector("#signup-populate");
       if (populateBtn) {
@@ -176,6 +190,19 @@
     var firstInput = root.querySelector("#signup-user-name");
     if (firstInput) {
       setTimeout(function () { firstInput.focus(); }, 0);
+    }
+
+    var signInLink = root.querySelector("#onboarding-sign-in-link");
+    if (signInLink) {
+      signInLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        try {
+          if (global.localStorage) {
+            global.localStorage.removeItem("crm-testMode");
+            global.location.reload();
+          }
+        } catch (err) {}
+      });
     }
 
     var moreToggle = root.querySelector("#signup-more-toggle");

@@ -130,6 +130,8 @@
     signUp: "பதிவு செய்",
     password: "கடவுச்சொல்",
     useTestMode: "சோதனை முறையைப் பயன்படுத்து",
+    testModeToggle: "சோதனை முறையைப் பயன்படுத்து",
+    testModeHint: "கணக்கு இல்லை, டெமோ தரவு மட்டுமே",
     createAccount: "கணக்கு உருவாக்கு",
     signOut: "வெளியேறு",
     step1Of2: "படி 1 / 2",

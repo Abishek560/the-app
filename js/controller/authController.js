@@ -111,6 +111,20 @@
     }).catch(function () { return null; });
   }
 
+  function updatePasswordFieldVisibility(root, testModeOn) {
+    var pwField = root && root.querySelector(".auth-password-field");
+    var pwInput = root && root.querySelector("#auth-signup-password");
+    if (!pwField || !pwInput) return;
+    if (testModeOn) {
+      pwField.style.display = "none";
+      pwInput.removeAttribute("required");
+      pwInput.value = "";
+    } else {
+      pwField.style.display = "";
+      pwInput.setAttribute("required", "required");
+    }
+  }
+
   function bind(root) {
     if (!root) return;
     var loginForm = root.querySelector("#auth-login-form");
@@ -118,6 +132,7 @@
     var showSignupBtn = root.querySelector("#auth-show-signup");
     var showLoginBtn = root.querySelector("#auth-show-login");
     var testModeLinks = root.querySelectorAll("#auth-use-test-mode");
+    var testModeToggle = root.querySelector("#auth-test-mode-toggle");
 
     if (testModeLinks.length) {
       testModeLinks.forEach(function (el) {
@@ -125,6 +140,12 @@
           e.preventDefault();
           switchToTestMode();
         });
+      });
+    }
+    if (testModeToggle) {
+      updatePasswordFieldVisibility(root, testModeToggle.checked);
+      testModeToggle.addEventListener("change", function () {
+        updatePasswordFieldVisibility(root, testModeToggle.checked);
       });
     }
     if (showSignupBtn) {
@@ -161,11 +182,29 @@
     if (signupForm) {
       signupForm.addEventListener("submit", function (e) {
         e.preventDefault();
+        var testModeToggleEl = root.querySelector("#auth-test-mode-toggle");
+        var useTestMode = testModeToggleEl && testModeToggleEl.checked;
         var name = (signupForm.querySelector("[name=name]") || {}).value;
         var email = (signupForm.querySelector("[name=email]") || {}).value;
         var password = (signupForm.querySelector("[name=password]") || {}).value;
         var orgName = (signupForm.querySelector("[name=orgName]") || {}).value;
-        if (!name || !email || !password || !orgName) return;
+        if (!name || !email || !orgName) return;
+        if (!useTestMode && !password) return;
+        if (useTestMode) {
+          try {
+            if (global.sessionStorage) {
+              global.sessionStorage.setItem("crm-signup-prefill", JSON.stringify({
+                userName: name.trim(),
+                userEmail: email.trim(),
+                orgName: orgName.trim()
+              }));
+            }
+            switchToTestMode();
+          } catch (err) {
+            if (theApp.errorPopup && theApp.errorPopup.show) theApp.errorPopup.show(err && err.message ? err.message : "Failed to switch to test mode");
+          }
+          return;
+        }
         var btn = root.querySelector("#auth-signup-submit");
         if (theApp.withButtonLoading && btn) {
           theApp.withButtonLoading(btn, handleSignup(name.trim(), email.trim(), password, orgName.trim()).catch(function (err) {
