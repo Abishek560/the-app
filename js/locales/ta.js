@@ -134,6 +134,8 @@
     testModeHint: "கணக்கு இல்லை, டெமோ தரவு மட்டுமே",
     createAccount: "கணக்கு உருவாக்கு",
     signOut: "வெளியேறு",
+    continue: "தொடர்",
+    enterEmailToContinue: "தொடர உங்கள் மின்னஞ்சலை உள்ளிடவும்",
     step1Of2: "படி 1 / 2",
     step2Of2: "படி 2 / 2",
     signUpSubtitle: "தொடங்க உங்கள் விவரங்களை உள்ளிடவும்.",

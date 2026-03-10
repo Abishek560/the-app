@@ -8,7 +8,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  fetchSignInMethodsForEmail
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
 import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-database.js";
 
@@ -34,6 +35,7 @@ if (typeof window !== "undefined") {
   window.firebaseDbGet = get;
   window.firebaseAuthSignIn = signInWithEmailAndPassword;
   window.firebaseAuthSignUp = createUserWithEmailAndPassword;
+  window.firebaseFetchSignInMethodsForEmail = fetchSignInMethodsForEmail;
   window.firebaseAuthSignOut = signOut;
   window.firebaseAuthUpdateProfile = updateProfile;
   window.firebaseAuthOnStateChanged = onAuthStateChanged;
@@ -44,4 +46,4 @@ if (typeof window !== "undefined") {
   };
 }
 
-export { app, auth, db, ref, set, get, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, onAuthStateChanged };
+export { app, auth, db, ref, set, get, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile, onAuthStateChanged, fetchSignInMethodsForEmail };

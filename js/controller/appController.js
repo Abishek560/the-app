@@ -102,7 +102,7 @@
 
     if (state.showAuthScreen) {
       var authCtrl = theApp.controller.auth;
-      if (authCtrl && authCtrl.renderAuth) authCtrl.renderAuth(false);
+      if (authCtrl && authCtrl.renderAuth) authCtrl.renderAuth();
       return;
     }
 

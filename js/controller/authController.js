@@ -30,16 +30,40 @@
     } catch (e) {}
   }
 
-  function showSignup() {
+  function showEmailStep() {
     if (!theApp.view.auth || !contentEl) return;
-    contentEl.innerHTML = theApp.view.auth.renderSignup();
+    contentEl.innerHTML = theApp.view.auth.renderEmailStep();
     bind(contentEl);
   }
 
-  function showLogin() {
+  function showLogin(email) {
     if (!theApp.view.auth || !contentEl) return;
-    contentEl.innerHTML = theApp.view.auth.renderLogin();
+    contentEl.innerHTML = theApp.view.auth.renderLogin(email || "");
     bind(contentEl);
+  }
+
+  function showSignup(email) {
+    if (!theApp.view.auth || !contentEl) return;
+    contentEl.innerHTML = theApp.view.auth.renderSignup(email || "");
+    bind(contentEl);
+  }
+
+  function checkEmailAndProceed(email) {
+    var fetchMethods = global.firebaseFetchSignInMethodsForEmail;
+    var auth = global.firebaseAuth;
+    if (!fetchMethods || !auth) {
+      showSignup(email);
+      return;
+    }
+    return fetchMethods(auth, email).then(function (methods) {
+      if (methods && methods.length > 0) {
+        showLogin(email);
+      } else {
+        showSignup(email);
+      }
+    }).catch(function () {
+      showSignup(email);
+    });
   }
 
   function handleLogin(email, password) {
@@ -127,18 +151,17 @@
 
   function bind(root) {
     if (!root) return;
+    var emailForm = root.querySelector("#auth-email-form");
     var loginForm = root.querySelector("#auth-login-form");
     var signupForm = root.querySelector("#auth-signup-form");
-    var showSignupBtn = root.querySelector("#auth-show-signup");
-    var showLoginBtn = root.querySelector("#auth-show-login");
-    var testModeLinks = root.querySelectorAll("#auth-use-test-mode");
+    var backToEmailLinks = root.querySelectorAll("#auth-back-to-email");
     var testModeToggle = root.querySelector("#auth-test-mode-toggle");
 
-    if (testModeLinks.length) {
-      testModeLinks.forEach(function (el) {
+    if (backToEmailLinks.length) {
+      backToEmailLinks.forEach(function (el) {
         el.addEventListener("click", function (e) {
           e.preventDefault();
-          switchToTestMode();
+          showEmailStep();
         });
       });
     }
@@ -148,16 +171,16 @@
         updatePasswordFieldVisibility(root, testModeToggle.checked);
       });
     }
-    if (showSignupBtn) {
-      showSignupBtn.addEventListener("click", function (e) {
+    if (emailForm) {
+      emailForm.addEventListener("submit", function (e) {
         e.preventDefault();
-        showSignup();
-      });
-    }
-    if (showLoginBtn) {
-      showLoginBtn.addEventListener("click", function (e) {
-        e.preventDefault();
-        showLogin();
+        var email = (emailForm.querySelector("[name=email]") || {}).value;
+        if (!email || !email.trim()) return;
+        var btn = root.querySelector("#auth-email-submit");
+        var promise = checkEmailAndProceed(email.trim());
+        if (theApp.withButtonLoading && btn && promise) {
+          theApp.withButtonLoading(btn, promise);
+        }
       });
     }
     if (loginForm) {
@@ -220,15 +243,16 @@
     }
   }
 
-  function renderAuth(showSignup) {
+  function renderAuth() {
     if (!theApp.view.auth || !contentEl) return;
-    contentEl.innerHTML = theApp.view.auth.render(!!showSignup);
+    contentEl.innerHTML = theApp.view.auth.renderEmailStep();
     bind(contentEl);
   }
 
   theApp.controller = theApp.controller || {};
   theApp.controller.auth = {
     renderAuth: renderAuth,
+    showEmailStep: showEmailStep,
     showLogin: showLogin,
     showSignup: showSignup,
     switchToTestMode: switchToTestMode,
