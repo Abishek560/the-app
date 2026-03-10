@@ -148,6 +148,15 @@
 
     var subtitleEl = document.getElementById("profile-subtitle");
     if (subtitleEl && user.name) subtitleEl.textContent = t("signedInAs") + " " + user.name;
+
+    var signOutSection = document.getElementById("profile-sign-out-section");
+    if (signOutSection) {
+      if (state.authUser && !state.testMode) {
+        signOutSection.removeAttribute("hidden");
+      } else {
+        signOutSection.setAttribute("hidden", "hidden");
+      }
+    }
   }
 
   /**

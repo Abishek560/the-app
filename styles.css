@@ -1898,7 +1898,8 @@ body {
 }
 
 /* Settings link in profile panel */
-.settings-link {
+.settings-link,
+.settings-link.sign-out-btn {
   display: block;
   padding: 10px 12px;
   font-size: 14px;
@@ -1907,6 +1908,13 @@ body {
   text-decoration: none;
   border-radius: 8px;
   transition: background 0.15s ease;
+}
+button.settings-link {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
 }
 .settings-link:hover {
   background: var(--profile-panel-hover);

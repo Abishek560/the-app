@@ -33,7 +33,7 @@ npx serve .
 ```
 
 Then open `http://localhost:3000` (or the port your server uses).  
-**Note:** Mock data is loaded from `data/app-data.json` via `fetch()`; serve the project over HTTP (e.g. `npx serve .`) so the JSON loads. Opening `index.html` as `file://` may block the fetch in some browsers.
+**Note:** Mock data is loaded from Firebase Realtime Database (or local `data/app-data.json` as fallback). Serve the project over HTTP (e.g. `npx serve .`) so the fetch works. **Firebase writes:** Create, update, and entity edits are persisted to Firebase when the mock API is used. Configure Firebase Realtime Database rules to allow read/write (e.g. `".read": true, ".write": true` for development).
 
 ### First run
 

@@ -9,25 +9,83 @@
   var mockDataObj;
   var MODULE_SETUP_TEMPLATES;
 
-  var APP_DATA_URL = "https://api.jsonbin.io/v3/b/69afd681ff3f7076473e1ed9";
-
-  /** Data loaded from JSONBin (or data/app-data.json fallback). Falls back to window globals if present. */
+  /** Data loaded from Firebase or data/app-data.json. Falls back to window globals if present. */
   function applyData(mockData, populateData) {
     MODULE_SETUP_TEMPLATES = (populateData && populateData.moduleSetupTemplates) || (typeof window !== "undefined" && window.__POPULATE_DATA__ && window.__POPULATE_DATA__.moduleSetupTemplates) || { groups: [] };
     modulesObj = (mockData && mockData.modules && typeof mockData.modules === "object") ? mockData.modules : (modulesObj || {});
     mockDataObj = (mockData && mockData.mockData && typeof mockData.mockData === "object") ? mockData.mockData : (mockDataObj || { currentUser: {} });
+    if (mockData && mockData.portal && typeof mockData.portal === "object") portalDetailsStore = mockData.portal;
     if (typeof window !== "undefined" && populateData) window.__POPULATE_DATA__ = populateData;
     return { mockData: mockData, populateData: populateData };
   }
-  function parseAppData(raw) {
-    var data = (raw && raw.record != null) ? raw.record : raw;
-    return applyData(data && data.mockData, data && data.populateData);
+  var FIREBASE_RTDB_BASE = "https://the-app-32d6c-default-rtdb.firebaseio.com";
+  var FIREBASE_RTDB_URL = FIREBASE_RTDB_BASE + "/.json";
+  var LOCAL_DATA_URL = "data/app-data.json";
+
+  function isTestMode() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage && window.localStorage.getItem("crm-testMode") === "true") return true;
+      if (typeof window !== "undefined" && window.theApp && window.theApp.state && window.theApp.state.testMode === true) return true;
+    } catch (e) {}
+    return false;
   }
-  var dataPromise = (typeof fetch !== "undefined"
-    ? fetch(APP_DATA_URL).then(function (r) { if (!r.ok) throw new Error("Failed to load app data"); return r.json(); }).then(parseAppData).catch(function (err) {
-      return fetch("data/app-data.json").then(function (r) { if (!r.ok) throw new Error("Fallback failed"); return r.json(); }).then(parseAppData);
-    }).catch(function (err) { console.warn("App data load failed, using defaults:", err && err.message); applyData(null, null); return {}; })
-    : Promise.resolve(applyData(null, null)));
+
+  function getPortalPath() {
+    var pn = (typeof window !== "undefined" && window.theApp && window.theApp.state && window.theApp.state.portalName) ? String(window.theApp.state.portalName).trim() : "";
+    return pn ? "portals/" + pn : "";
+  }
+
+  function appendAuthToken(url) {
+    var getToken = (typeof window !== "undefined" && window.getFirebaseIdToken) ? window.getFirebaseIdToken() : Promise.resolve(null);
+    return getToken.then(function (token) {
+      if (token) return url + (url.indexOf("?") >= 0 ? "&" : "?") + "auth=" + encodeURIComponent(token);
+      return url;
+    });
+  }
+
+  /** Persist data to Firebase. Test mode: no-op. Release: write to portals/{portalName}/... */
+  function persistToFirebase(path, data) {
+    if (isTestMode()) return;
+    if (typeof fetch === "undefined") return;
+    var basePath = getPortalPath();
+    if (!basePath) return;
+    var rel = path.replace(/^\/+/, "");
+    if (rel.indexOf("mockData/portal") === 0) rel = "portal";
+    else if (rel.indexOf("mockData/mockData/currentUser") === 0) rel = "currentUser";
+    else if (rel.indexOf("mockData/modules") === 0) rel = "modules";
+    else if (rel.indexOf("mockData/mockData/") === 0) rel = "entities/" + rel.replace("mockData/mockData/", "");
+    var fullPath = basePath + "/" + rel;
+    var url = FIREBASE_RTDB_BASE + "/" + fullPath + ".json";
+    appendAuthToken(url).then(function (authUrl) {
+      return fetch(authUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+    }).catch(function (err) { console.warn("Firebase persist failed:", fullPath, err && err.message); });
+  }
+
+  function loadDataFromUrl(url) {
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); });
+  }
+
+  function loadDataFromUrlWithAuth(url) {
+    return appendAuthToken(url).then(function (authUrl) { return loadDataFromUrl(authUrl); });
+  }
+
+  function tryLoadAppData() {
+    if (typeof fetch === "undefined") return Promise.resolve(applyData(null, null));
+    if (isTestMode()) {
+      return loadDataFromUrl(LOCAL_DATA_URL)
+        .then(function (data) { return applyData(data && data.mockData, data && data.populateData); })
+        .catch(function (err) { console.warn("Test mode: app data load failed:", err && err.message); applyData(null, null); return {}; });
+    }
+    return loadDataFromUrl(LOCAL_DATA_URL)
+      .then(function (data) { return applyData(data && data.mockData, data && data.populateData); })
+      .catch(function (err) { console.warn("App data load failed, using defaults:", err && err.message); applyData(null, null); return {}; });
+  }
+
+  var dataPromise = tryLoadAppData();
 
   function delay(ms, value) {
     return new Promise(function (resolve) { setTimeout(function () { resolve(value); }, ms); });
@@ -234,6 +292,7 @@
     Object.keys(data).forEach(function (key) {
       if (key !== "id") entity[key] = data[key];
     });
+    persistToFirebase("mockData/mockData/" + moduleId, list);
     return entity;
   }
 
@@ -244,6 +303,7 @@
     var newId = maxId + 1;
     var entity = Object.assign({ id: newId }, data);
     list.push(entity);
+    persistToFirebase("mockData/mockData/" + moduleId, list);
     return entity;
   }
 
@@ -268,6 +328,7 @@
       if (data.version != null) portalDetailsStore.version = String(data.version);
       if (data.baseURL != null) portalDetailsStore.baseURL = String(data.baseURL);
     }
+    persistToFirebase("mockData/portal", portalDetailsStore);
     return portalDetailsStore;
   }
 
@@ -275,6 +336,7 @@
     var m = modulesObj[moduleId];
     if (!m || !data || typeof data !== "object") return null;
     if (data.label != null) m.label = data.label;
+    persistToFirebase("mockData/modules", modulesObj);
     return m;
   }
 
@@ -295,6 +357,8 @@
       fields: JSON.parse(JSON.stringify(defaultNewModuleFields))
     };
     if (typeof mockDataObj !== "undefined") mockDataObj[id] = [];
+    persistToFirebase("mockData/modules", modulesObj);
+    persistToFirebase("mockData/mockData/" + id, mockDataObj[id]);
     return modulesObj[id];
   }
 
@@ -330,6 +394,7 @@
       });
       modulesObj[id] = { id: id, label: labelObj, fields: fieldsObj };
       if (typeof mockDataObj !== "undefined") mockDataObj[id] = [];
+      persistToFirebase("mockData/mockData/" + id, mockDataObj[id]);
       var resultFields = fieldsArr.map(function (f) {
         var out = { id: (f && f.id || "").trim(), label: (f && (f.label || f.id || "").trim()) || "", type: (f && f.type) || "text" };
         if (f && f.type === "module" && f.refModuleIndex != null) out.moduleId = "module" + (maxN + f.refModuleIndex + 1);
@@ -341,6 +406,7 @@
         fields: resultFields
       });
     });
+    persistToFirebase("mockData/modules", modulesObj);
     return result;
   }
 
@@ -355,12 +421,36 @@
     });
   }
 
+  function loadPortalData(portalName) {
+    var url = FIREBASE_RTDB_BASE + "/portals/" + encodeURIComponent(portalName) + ".json";
+    return loadDataFromUrlWithAuth(url).then(function (data) {
+      if (data && data.portal) portalDetailsStore = data.portal;
+      if (data && data.currentUser) mockDataObj.currentUser = data.currentUser;
+      if (data && data.modules && typeof data.modules === "object") modulesObj = data.modules;
+      if (data && data.entities && typeof data.entities === "object") {
+        Object.keys(data.entities).forEach(function (mid) {
+          mockDataObj[mid] = Array.isArray(data.entities[mid]) ? data.entities[mid] : [];
+        });
+      }
+      return data;
+    });
+  }
+
   window.MockApi = {
     getModuleSetupTemplates: function () {
       return dataPromise.then(function () { return MODULE_SETUP_TEMPLATES; });
     },
     getBootstrap: function (options) {
-      return dataPromise.then(function () { return runBootstrap(options); });
+      return dataPromise.then(function () {
+        var pn = (options && options.portalName) || (typeof window !== "undefined" && window.theApp && window.theApp.state && window.theApp.state.portalName);
+        if (!isTestMode() && pn) {
+          return loadPortalData(pn).then(function () { return runBootstrap(options); }).catch(function () { return runBootstrap(options); });
+        }
+        return runBootstrap(options);
+      });
+    },
+    loadPortalData: function (portalName) {
+      return dataPromise.then(function () { return loadPortalData(portalName); });
     },
     getModules: function (options) {
       return dataPromise.then(function () {
@@ -392,6 +482,7 @@
             email: data.email != null ? String(data.email) : (mockDataObj.currentUser && mockDataObj.currentUser.email) || "",
             initials: data.initials != null ? String(data.initials) : (mockDataObj.currentUser && mockDataObj.currentUser.initials) || "?"
           };
+          persistToFirebase("mockData/mockData/currentUser", mockDataObj.currentUser);
         }
         return delay(MOCK_DELAY_MS, mockDataObj.currentUser);
       });

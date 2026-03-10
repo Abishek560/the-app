@@ -100,6 +100,12 @@
   function renderContent() {
     if (!contentEl) return;
 
+    if (state.showAuthScreen) {
+      var authCtrl = theApp.controller.auth;
+      if (authCtrl && authCtrl.renderAuth) authCtrl.renderAuth(false);
+      return;
+    }
+
     if (state.showOnboarding) {
       if (state.showModuleSetup) {
         var moduleSetupView = theApp.view.moduleSetup;
@@ -237,6 +243,18 @@
         renderContent();
       });
     }
+    var signOutBtn = document.getElementById("profile-sign-out-btn");
+    if (signOutBtn && signOutBtn.getAttribute("data-crm-bound") !== "true") {
+      signOutBtn.setAttribute("data-crm-bound", "true");
+      signOutBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        var signOut = global.firebaseAuthSignOut;
+        var auth = global.firebaseAuth;
+        if (signOut && auth) {
+          signOut(auth);
+        }
+      });
+    }
   }
 
   function bindLanguageOptions() {
@@ -258,9 +276,61 @@
     });
   }
 
+  function setupTopbarForOnboarding() {
+    var topbarInner = document.querySelector(".topbar-inner");
+    if (topbarInner) {
+      var appTitle = (language && language.t ? language.t("appName") : "App").replace(/</g, "&lt;");
+      topbarInner.innerHTML = "<span class=\"signup-topbar-title\">" + appTitle + "</span>";
+      topbarInner.setAttribute("data-onboarding", "true");
+    }
+    if (language && language.t && typeof document !== "undefined" && document.title !== undefined) document.title = language.t("appName") + " – " + (language.t("appTagline") || "");
+  }
+
+  function setupTopbarForMainApp() {
+    var navModules = topbarView.getNavModules ? topbarView.getNavModules() : state.modules || [];
+    if (!state.activeModule && navModules.length) state.activeModule = navModules[0].id;
+    if (state.activeModule === "staffs" && navModules.length) state.activeModule = navModules[0].id;
+    if (language && language.t && typeof document !== "undefined" && document.title !== undefined) {
+      document.title = (state.portal && state.portal.name) ? (state.portal.name + " – " + (language.t("appTagline") || "")) : (language.t("appName") + " – " + (language.t("appTagline") || ""));
+    }
+    if (language && language.setOnLocaleChange) language.setOnLocaleChange(function () {
+      var loc = language.getLocale ? language.getLocale() : "en";
+      if (document.title !== undefined) document.title = (state.portal && state.portal.name) ? (state.portal.name + " – " + (language.t("appTagline") || "")) : (language.t("appName") + " – " + (language.t("appTagline") || ""));
+      var bootstrapPromise = api.getBootstrap ? api.getBootstrap({ locale: loc, portalName: state.portalName }) : (api.getModules ? api.getModules({ locale: loc }) : Promise.resolve([])).then(function (modules) { return { modules: modules }; });
+      bootstrapPromise.then(function (b) {
+        if (b.modules && b.modules.length) state.modules = ensureStaticModules(b.modules);
+        var navMods = topbarView.getNavModules ? topbarView.getNavModules() : [];
+        if (state.activeModule === "staffs" && navMods.length) state.activeModule = navModules[0].id;
+        var navEl = document.getElementById("nav-modules");
+        topbarView.renderNav(navEl, { getMaxPrimary: topbarView.getMaxPrimary });
+        navController.bindNavListeners();
+        renderContent();
+        if (navController.isProfileOpen && navController.isProfileOpen()) topbarView.hydrateProfileFromState();
+      });
+    });
+    var navEl = document.getElementById("nav-modules");
+    topbarView.renderNav(navEl, { getMaxPrimary: topbarView.getMaxPrimary });
+    navController.bindNavListeners();
+  }
+
+  function loadAndShowMainApp() {
+    var locale = (language && language.getLocale) ? language.getLocale() : "en";
+    return (api.getBootstrap ? api.getBootstrap({ locale: locale, portalName: state.portalName }) : Promise.resolve({})).then(function (bootstrap) {
+      if (bootstrap.user != null) state.currentUser = bootstrap.user;
+      if (bootstrap.portal != null) state.portal = bootstrap.portal;
+      if (bootstrap.modules && bootstrap.modules.length) state.modules = ensureStaticModules(bootstrap.modules);
+      if (!state.modules || state.modules.length === 0) state.modules = [];
+      state.showOnboarding = false;
+      state.showAuthScreen = false;
+      setupTopbarForMainApp();
+      renderContent();
+      if (profileBtn) profileBtn.addEventListener("click", function (e) { e.stopPropagation(); navController.toggleProfilePanel(); });
+    });
+  }
+
   /**
    * Bootstraps the app: theme, modules, nav, content, global listeners.
-   * Loads user + portal + modules (e.g. after signup) then builds the app. Dashboard, Settings, Staffs are static (always present).
+   * Test mode: show onboarding. Release mode: auth screen if not signed in, else main app.
    */
   async function init() {
     theApp.controller.theme.bindThemeControls();
@@ -271,12 +341,52 @@
     var locale = (language && language.getLocale) ? language.getLocale() : "en";
     var needOnboarding = true;
 
-    if (!needOnboarding && api.getBootstrap) {
-      var bootstrap = await api.getBootstrap({ locale: locale });
-      if (bootstrap.user != null) state.currentUser = bootstrap.user;
-      if (bootstrap.portal != null) state.portal = bootstrap.portal;
-      if (bootstrap.modules && bootstrap.modules.length) state.modules = ensureStaticModules(bootstrap.modules);
+    try {
+      if (global.localStorage && global.localStorage.getItem("crm-testMode") === "true") {
+        state.testMode = true;
+      }
+    } catch (e) {}
+
+    if (state.testMode) {
+      needOnboarding = true;
+      state.showOnboarding = true;
+      state.showAuthScreen = false;
+    } else {
+      var onAuthChanged = global.firebaseAuthOnStateChanged;
+      var auth = global.firebaseAuth;
+      if (onAuthChanged && auth) {
+        needOnboarding = false;
+        onAuthChanged(auth, function (user) {
+          if (user) {
+            state.authUser = user;
+            state.showAuthScreen = false;
+            var authCtrl = theApp.controller.auth;
+            var loadPortal = authCtrl && authCtrl.loadPortalForUser ? authCtrl.loadPortalForUser(user.uid) : Promise.resolve(null);
+            loadPortal.then(function (portalName) {
+              state.portalName = portalName || "";
+              try { if (global.localStorage && portalName) global.localStorage.setItem("crm-portalName", portalName); } catch (e) {}
+              loadAndShowMainApp();
+            }).catch(function () {
+              state.portalName = "";
+              loadAndShowMainApp();
+            });
+          } else {
+            state.authUser = null;
+            state.portalName = "";
+            state.showAuthScreen = true;
+            state.showOnboarding = false;
+            if (navController.closeProfilePanel) navController.closeProfilePanel();
+            setupTopbarForOnboarding();
+            renderContent();
+          }
+        });
+      } else {
+        needOnboarding = true;
+        state.showOnboarding = true;
+        state.showAuthScreen = false;
+      }
     }
+
     if (!state.modules || state.modules.length === 0) state.modules = [];
 
     if (typeof document.documentElement.setAttribute === "function") document.documentElement.setAttribute("dir", theApp.config.rtl ? "rtl" : "ltr");
@@ -284,38 +394,7 @@
 
     if (needOnboarding) {
       state.showOnboarding = true;
-      var topbarInner = document.querySelector(".topbar-inner");
-      if (topbarInner) {
-        var appTitle = (language && language.t ? language.t("appName") : "App").replace(/</g, "&lt;");
-        topbarInner.innerHTML = "<span class=\"signup-topbar-title\">" + appTitle + "</span>";
-        topbarInner.setAttribute("data-onboarding", "true");
-      }
-      if (language && language.t && typeof document !== "undefined" && document.title !== undefined) document.title = language.t("appName") + " – " + (language.t("appTagline") || "");
-    } else {
-      var navModules = topbarView.getNavModules ? topbarView.getNavModules() : state.modules || [];
-      if (!state.activeModule && navModules.length) state.activeModule = navModules[0].id;
-      if (state.activeModule === "staffs" && navModules.length) state.activeModule = navModules[0].id;
-      if (language && language.t && typeof document !== "undefined" && document.title !== undefined) {
-        document.title = (state.portal && state.portal.name) ? (state.portal.name + " – " + (language.t("appTagline") || "")) : (language.t("appName") + " – " + language.t("appTagline"));
-      }
-      if (language && language.setOnLocaleChange) language.setOnLocaleChange(function () {
-        var loc = language.getLocale ? language.getLocale() : "en";
-        if (document.title !== undefined) document.title = (state.portal && state.portal.name) ? (state.portal.name + " – " + (language.t("appTagline") || "")) : (language.t("appName") + " – " + language.t("appTagline"));
-        var bootstrapPromise = api.getBootstrap ? api.getBootstrap({ locale: loc }) : (api.getModules ? api.getModules({ locale: loc }) : Promise.resolve([])).then(function (modules) { return { modules: modules }; });
-        bootstrapPromise.then(function (b) {
-          if (b.modules && b.modules.length) state.modules = ensureStaticModules(b.modules);
-          var navMods = topbarView.getNavModules ? topbarView.getNavModules() : [];
-          if (state.activeModule === "staffs" && navMods.length) state.activeModule = navMods[0].id;
-          var navEl = document.getElementById("nav-modules");
-          topbarView.renderNav(navEl, { getMaxPrimary: topbarView.getMaxPrimary });
-          navController.bindNavListeners();
-          renderContent();
-          if (navController.isProfileOpen && navController.isProfileOpen()) topbarView.hydrateProfileFromState();
-        });
-      });
-      var navEl = document.getElementById("nav-modules");
-      topbarView.renderNav(navEl, { getMaxPrimary: topbarView.getMaxPrimary });
-      navController.bindNavListeners();
+      setupTopbarForOnboarding();
     }
 
     renderContent();
@@ -344,7 +423,7 @@
       }
     });
 
-    if (!needOnboarding && profileBtn) {
+    if (!needOnboarding && !state.showAuthScreen && profileBtn) {
       profileBtn.addEventListener("click", function (e) {
         e.stopPropagation();
         navController.toggleProfilePanel();
@@ -367,10 +446,12 @@
 
   /** Called after module setup Finish (or when resuming). Uses state.modules if already set (from setup), else fetches. Renders main app. */
   function enterMainApp() {
+    var locale = (language && language.getLocale) ? language.getLocale() : "en";
+    var opts = { locale: locale, portalName: state.portalName };
     var hasModulesFromSetup = state.modules && state.modules.length > 0;
     var promise = hasModulesFromSetup
       ? Promise.resolve({ modules: state.modules })
-      : (api.getBootstrap ? api.getBootstrap({ locale: (language && language.getLocale) ? language.getLocale() : "en" }) : (api.getModules ? api.getModules({ locale: (language && language.getLocale) ? language.getLocale() : "en" }) : Promise.resolve([])).then(function (mods) { return { modules: mods }; }));
+      : (api.getBootstrap ? api.getBootstrap(opts) : (api.getModules ? api.getModules({ locale: locale }) : Promise.resolve([])).then(function (mods) { return { modules: mods }; }));
     return promise.then(function (b) {
       if (!hasModulesFromSetup && b.modules && b.modules.length) state.modules = ensureStaticModules(b.modules);
       var navModules = topbarView.getNavModules ? topbarView.getNavModules() : state.modules || [];
