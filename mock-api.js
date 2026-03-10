@@ -460,6 +460,28 @@
     getCurrentUser: function () {
       return dataPromise.then(function () { return delay(MOCK_DELAY_MS, mockDataObj.currentUser); });
     },
+    /** Check if email exists. For QA: exists true for demo@example.com, else false. */
+    checkUserAvailability: function (email) {
+      return dataPromise.then(function () {
+        var normalized = String(email || "").trim().toLowerCase();
+        var exists = normalized === "demo@example.com";
+        return delay(MOCK_DELAY_MS, { exists: exists });
+      });
+    },
+    /** Mock login: accept demo@example.com + any password; return user with portalName. */
+    login: function (email, password) {
+      return dataPromise.then(function () {
+        var normalized = String(email || "").trim().toLowerCase();
+        if (normalized === "demo@example.com") {
+          return delay(MOCK_DELAY_MS, {
+            email: normalized,
+            name: "Demo User",
+            portalName: "default"
+          });
+        }
+        return delay(MOCK_DELAY_MS, null);
+      });
+    },
     setCurrentUser: function (data) {
       return dataPromise.then(function () {
         if (data && typeof data === "object") {

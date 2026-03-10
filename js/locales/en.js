@@ -133,6 +133,7 @@
     testModeToggle: "Use test mode",
     testModeHint: "No account, demo data only",
     createAccount: "Create account",
+    invalidEmailOrPassword: "Invalid email or password",
     signOut: "Sign out",
     clearSession: "Clear session",
     continue: "Continue",

@@ -228,7 +228,49 @@
       return tryRead(apiGet("me", {}), function (d) { return d.name != null || d.email != null; }, "getCurrentUser");
     },
 
-    /** Add user. API POST first, mock only on failure. */
+    /** Check if email is registered. GET /api/v1/users/check-email?email=... Response: { exists: true|false }. In test mode uses MockApi. */
+    checkUserAvailability: function (email) {
+      if (isTestMode()) return mockFallback("checkUserAvailability", email);
+      var url = buildUrl("users/check-email", { email: email || "" }, { root: true });
+      return fetch(url, { method: "GET", headers: { Accept: "application/json" } })
+        .then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (body) {
+          if (body != null && typeof body === "object" && "exists" in body) return body;
+          return null;
+        })
+        .catch(function () { return null; })
+        .then(function (data) {
+          if (data != null && typeof data === "object") return data;
+          return mockFallback("checkUserAvailability", email);
+        });
+    },
+
+    /** Login. POST /api/v1/auth/login Body: { email, password }. Resolves with user payload (e.g. portalName) on 200; rejects on 4xx. */
+    login: function (email, password) {
+      if (isTestMode()) {
+        return mockFallback("login", email, password).then(function (u) {
+          if (u && typeof u === "object") return u;
+          return Promise.reject(new Error("Invalid email or password"));
+        });
+      }
+      var url = buildUrl("auth/login", null, { root: true });
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email: email || "", password: password || "" })
+      }).then(function (res) {
+        return res.json().then(function (body) {
+          if (res.ok) return body;
+          var msg = (body && body.message) || (body && body.error) || "Invalid email or password";
+          return Promise.reject(new Error(msg));
+        }).catch(function (err) {
+          if (err && err.message) return Promise.reject(err);
+          return Promise.reject(new Error(res.status === 401 ? "Invalid email or password" : "Login failed"));
+        });
+      });
+    },
+
+    /** Add user (signup). API POST first, mock only on failure. Body may include password. */
     createUser: function (data) {
       return tryCreate(apiPost("users", data, { root: true }), "setCurrentUser", data).then(function (u) { return u || data; });
     },

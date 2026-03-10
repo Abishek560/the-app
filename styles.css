@@ -2569,6 +2569,11 @@ button.settings-link {
   color: var(--text-muted);
   cursor: default;
 }
+.auth-error {
+  color: var(--color-error, #b91c1c);
+  font-size: 14px;
+  margin: 8px 0 0 0;
+}
 .signup-actions {
   margin-top: 8px;
   display: flex;

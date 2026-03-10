@@ -133,6 +133,7 @@
     testModeToggle: "சோதனை முறையைப் பயன்படுத்து",
     testModeHint: "கணக்கு இல்லை, டெமோ தரவு மட்டுமே",
     createAccount: "கணக்கு உருவாக்கு",
+    invalidEmailOrPassword: "மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது",
     signOut: "வெளியேறு",
     clearSession: "அமர்வை அழி",
     continue: "தொடர்",
